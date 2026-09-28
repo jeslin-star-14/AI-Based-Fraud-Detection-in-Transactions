@@ -1,14 +1,7 @@
 import { Search, Filter, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
-
-interface Transaction {
-  id: string;
-  customerName: string;
-  location: string;
-  date: string;
-  amount: number;
-  riskScore: number;
-}
+import { mockTransactions } from '../data/mockData';
+import { Transaction } from '../types';
 
 interface SearchSidebarProps {
   onSelectTransaction: (id: string) => void;
@@ -18,57 +11,8 @@ interface SearchSidebarProps {
 const SearchSidebar = ({ onSelectTransaction, selectedId }: SearchSidebarProps) => {
   const [searchQuery, setSearchQuery] = useState('322');
   
-  // Mock transaction data
-  const transactions: Transaction[] = [
-    {
-      id: '#3G327H',
-      customerName: 'Jeff Henry',
-      location: 'Howesville',
-      date: '23 Jun',
-      amount: 234.22,
-      riskScore: 987,
-    },
-    {
-      id: '#4M231J',
-      customerName: 'Marc Shaw',
-      location: 'Howesville',
-      date: '23 Jun',
-      amount: 234.22,
-      riskScore: 931,
-    },
-    {
-      id: '#2L894K',
-      customerName: 'Evelyn Lopez',
-      location: 'East Nash',
-      date: '23 Jun',
-      amount: 541,
-      riskScore: 933,
-    },
-    {
-      id: '#8N453P',
-      customerName: 'Hattie Cobb',
-      location: 'Gutkowskiton',
-      date: '23 Jun',
-      amount: 41,
-      riskScore: 453,
-    },
-    {
-      id: '#7K219M',
-      customerName: 'Bobby Page',
-      location: 'South Lillydury',
-      date: '23 Jun',
-      amount: 591,
-      riskScore: 641,
-    },
-    {
-      id: '#1P876L',
-      customerName: 'Daniel Harper',
-      location: 'East Nash',
-      date: '23 Jun',
-      amount: 543,
-      riskScore: 933,
-    },
-  ];
+  // Use mock transaction data
+  const transactions: Transaction[] = mockTransactions;
 
   const getRiskColor = (score: number) => {
     if (score >= 900) return 'text-green-600';

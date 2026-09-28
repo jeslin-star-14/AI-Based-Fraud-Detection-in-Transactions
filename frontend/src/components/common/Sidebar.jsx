@@ -7,41 +7,37 @@ function Sidebar({ isOpen }) {
 
   const isActive = (path) => location.pathname === path;
 
+  const mainNav = [
+    { path: '/dashboard', label: 'Dashboard', icon: '📊' },
+    { path: '/transactions', label: 'Transactions', icon: '💳' },
+    { path: '/fraud-alerts', label: 'Fraud Alerts', icon: '🚨' },
+    { path: '/reports', label: 'Reports', icon: '📈' }
+  ];
+
   return (
     <aside className={`sidebar ${isOpen ? 'open' : 'closed'}`}>
       <div className="sidebar-header">
-        <h1>FDS</h1>
+        <div className="sidebar-logo">FD</div>
+        <h1>FraudShield</h1>
       </div>
 
       <nav className="sidebar-nav">
-        <Link
-          to="/dashboard"
-          className={`nav-link ${isActive('/dashboard') ? 'active' : ''}`}
-        >
-          📊 Dashboard
-        </Link>
-        <Link
-          to="/transactions"
-          className={`nav-link ${isActive('/transactions') ? 'active' : ''}`}
-        >
-          💳 Transactions
-        </Link>
-        <Link
-          to="/fraud-alerts"
-          className={`nav-link ${isActive('/fraud-alerts') ? 'active' : ''}`}
-        >
-          🚨 Fraud Alerts
-        </Link>
-        <Link
-          to="/reports"
-          className={`nav-link ${isActive('/reports') ? 'active' : ''}`}
-        >
-          📈 Reports
-        </Link>
+        <div className="sidebar-section-title">Main</div>
+        {mainNav.map((nav) => (
+          <Link
+            key={nav.path}
+            to={nav.path}
+            className={`nav-link ${isActive(nav.path) ? 'active' : ''}`}
+            title={nav.label}
+          >
+            <span>{nav.icon}</span>
+            <span>{nav.label}</span>
+          </Link>
+        ))}
       </nav>
 
       <div className="sidebar-footer">
-        <p>v1.0.0</p>
+        Fraud Detection v1.0
       </div>
     </aside>
   );

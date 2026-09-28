@@ -1,0 +1,338 @@
+.reports-page {
+  animation: fadeIn var(--transition-normal);
+}
+
+.page-header {
+  margin-bottom: 2.5rem;
+}
+
+.page-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem;
+  letter-spacing: -0.5px;
+}
+
+.page-header p {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Report Generator */
+.report-generator {
+  background: var(--bg-primary);
+  border: 1px solid var(--color-gray-200);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.generator-header {
+  padding: 1.5rem;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.generator-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.generator-form {
+  padding: 2rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  align-items: end;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.form-group select,
+.form-group input {
+  padding: 0.75rem;
+  border: 1.5px solid var(--color-gray-300);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition: all var(--transition-fast);
+}
+
+.form-group select:focus,
+.form-group input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+}
+
+.date-range {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.date-range input {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1.5px solid var(--color-gray-300);
+  border-radius: 8px;
+  font-size: 0.875rem;
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  grid-column: 1 / -1;
+}
+
+.btn-primary,
+.btn-secondary {
+  flex: 1;
+  padding: 0.875rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--color-primary-dark);
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1.5px solid var(--color-gray-300);
+}
+
+.btn-secondary:hover {
+  background: var(--bg-tertiary);
+}
+
+/* Reports Section */
+.reports-section {
+  margin-bottom: 2rem;
+}
+
+.reports-section h3,
+.quick-export h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 1.5rem;
+}
+
+.reports-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.report-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--color-gray-200);
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all var(--transition-normal);
+}
+
+.report-card:hover {
+  border-color: var(--color-gray-300);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.report-icon {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.report-card h4 {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.report-description {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0 0 1rem;
+  line-height: 1.5;
+}
+
+.report-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.stat .label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.stat .value {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.risk-label {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.risk-label.risk-low {
+  background: rgba(34, 197, 94, 0.1);
+  color: #15803d;
+}
+
+.risk-label.risk-medium {
+  background: rgba(245, 158, 11, 0.1);
+  color: #b45309;
+}
+
+.risk-label.risk-high {
+  background: rgba(239, 68, 68, 0.1);
+  color: #991b1b;
+}
+
+.report-meta {
+  margin-bottom: 1rem;
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+}
+
+.report-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+.export-btn {
+  padding: 0.65rem 0.75rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--color-gray-300);
+  border-radius: 6px;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.75rem;
+  transition: all var(--transition-fast);
+}
+
+.export-btn:hover {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+/* Quick Export */
+.quick-export {
+  background: var(--bg-primary);
+  border: 1px solid var(--color-gray-200);
+  border-radius: 12px;
+  padding: 2rem;
+}
+
+.export-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.export-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.5rem 1rem;
+  background: var(--bg-secondary);
+  border: 1.5px solid var(--color-gray-300);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.export-option:hover {
+  border-color: var(--color-primary);
+  background: rgba(14, 165, 233, 0.05);
+  transform: translateY(-2px);
+}
+
+.export-option .icon {
+  font-size: 2rem;
+}
+
+.export-option .label {
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 768px) {
+  .page-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .generator-form {
+    grid-template-columns: 1fr;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .reports-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .report-stats {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+  }
+
+  .export-options {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

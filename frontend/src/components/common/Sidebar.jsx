@@ -1,63 +1,50 @@
-import React from "react";
-import { NavLink } from "react-router-dom";
+import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import '../../../src/styles/sidebar.css';
 
-const links = [
-  { to: "/", label: "Dashboard", exact: true },
-  { to: "/transactions", label: "Transactions" },
-  { to: "/alerts", label: "Fraud Alerts" },
-];
+function Sidebar({ isOpen }) {
+  const location = useLocation();
 
-export default function Sidebar() {
+  const isActive = (path) => location.pathname === path;
+
   return (
-    <aside
-      style={{
-        width: 220,
-        flexShrink: 0,
-        background: "var(--surface)",
-        borderRight: "1px solid var(--border)",
-        padding: "24px 16px",
-        display: "flex",
-        flexDirection: "column",
-        gap: 4,
-      }}
-    >
-      <div style={{ padding: "0 8px 28px" }}>
-        <div style={{ fontWeight: 700, fontSize: 17 }}>Sentinel</div>
-        <div style={{ color: "var(--text-dim)", fontSize: 12 }}>Fraud Intelligence</div>
+    <aside className={`sidebar ${isOpen ? 'open' : 'closed'}`}>
+      <div className="sidebar-header">
+        <h1>FDS</h1>
       </div>
 
-      {links.map((link) => (
-        <NavLink
-          key={link.to}
-          to={link.to}
-          end={link.exact}
-          style={({ isActive }) => ({
-            padding: "10px 12px",
-            borderRadius: 8,
-            fontSize: 14,
-            fontWeight: 500,
-            color: isActive ? "var(--text)" : "var(--text-dim)",
-            background: isActive ? "var(--surface-2)" : "transparent",
-          })}
+      <nav className="sidebar-nav">
+        <Link
+          to="/dashboard"
+          className={`nav-link ${isActive('/dashboard') ? 'active' : ''}`}
         >
-          {link.label}
-        </NavLink>
-      ))}
+          📊 Dashboard
+        </Link>
+        <Link
+          to="/transactions"
+          className={`nav-link ${isActive('/transactions') ? 'active' : ''}`}
+        >
+          💳 Transactions
+        </Link>
+        <Link
+          to="/fraud-alerts"
+          className={`nav-link ${isActive('/fraud-alerts') ? 'active' : ''}`}
+        >
+          🚨 Fraud Alerts
+        </Link>
+        <Link
+          to="/reports"
+          className={`nav-link ${isActive('/reports') ? 'active' : ''}`}
+        >
+          📈 Reports
+        </Link>
+      </nav>
 
-      <div style={{ marginTop: "auto", padding: "0 8px" }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            color: "var(--accent-safe)",
-            fontSize: 12,
-          }}
-        >
-          <span className="dot" />
-          Model online
-        </div>
+      <div className="sidebar-footer">
+        <p>v1.0.0</p>
       </div>
     </aside>
   );
 }
+
+export default Sidebar;

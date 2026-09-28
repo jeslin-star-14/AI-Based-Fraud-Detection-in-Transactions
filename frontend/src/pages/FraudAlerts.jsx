@@ -1,46 +1,50 @@
-import React, { useEffect, useState } from "react";
-import Topbar from "../components/common/Topbar";
-import { getTransactions } from "../services/transactionService";
+import React, { useState, useEffect } from 'react';
 
-export default function FraudAlerts() {
+function FraudAlerts() {
   const [alerts, setAlerts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getTransactions().then((data) => setAlerts(data.filter((t) => t.status === "flagged")));
+    fetchAlerts();
   }, []);
 
+  const fetchAlerts = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/api/fraud-alerts/');
+      const data = await response.json();
+      setAlerts(data.alerts);
+    } catch (err) {
+      console.error('Error fetching alerts:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div style={{ flex: 1, overflowY: "auto" }}>
-      <Topbar title="Fraud Alerts" subtitle="High-confidence anomalies requiring action" />
-      <div style={{ padding: 32, display: "flex", flexDirection: "column", gap: 12 }}>
-        {alerts.map((a) => (
-          <div
-            key={a.id}
-            style={{
-              background: "var(--surface)",
-              border: "1px solid var(--border)",
-              borderLeft: "3px solid var(--accent-risk)",
-              borderRadius: 8,
-              padding: "16px 20px",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <div>
-              <div className="mono" style={{ fontWeight: 600 }}>{a.id} <span style={{ color: "var(--text-dim)", fontWeight: 400 }}>· {a.account}</span></div>
-              <div style={{ fontSize: 12.5, color: "var(--text-dim)", marginTop: 4 }}>
-                ${a.amount.toLocaleString()} · {a.location} · {a.method}
+    <div className="slide-up">
+      <h1>Fraud Alerts</h1>
+      
+      <div className="card" style={{ marginTop: '2rem' }}>
+        {loading ? (
+          <div className="spinner"></div>
+        ) : alerts.length > 0 ? (
+          <div>
+            {alerts.map((alert) => (
+              <div key={alert.id} className="alert alert-warning" style={{ marginBottom: '1rem' }}>
+                <div>
+                  <strong>Alert #{alert.id}</strong>
+                  <p>{alert.reason}</p>
+                  <small>Transaction ID: {alert.transaction_id}</small>
+                </div>
               </div>
-            </div>
-            <div style={{ textAlign: "right" }}>
-              <div className="mono" style={{ color: "var(--accent-risk)", fontWeight: 600 }}>Risk {a.risk}</div>
-              <div style={{ fontSize: 11.5, color: "var(--text-dim)" }}>{a.time}</div>
-            </div>
+            ))}
           </div>
-        ))}
-        {alerts.length === 0 && <div style={{ color: "var(--text-dim)" }}>No active fraud alerts right now.</div>}
+        ) : (
+          <p>No active alerts</p>
+        )}
       </div>
     </div>
   );
 }
+
+export default FraudAlerts;

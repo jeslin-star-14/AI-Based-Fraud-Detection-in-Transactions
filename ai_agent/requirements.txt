@@ -1,0 +1,3 @@
+# No hard dependencies for the rule-based agent itself.
+# Uncomment to enable optional LLM-backed phrasing (see llm_client.py):
+# anthropic==0.34.0

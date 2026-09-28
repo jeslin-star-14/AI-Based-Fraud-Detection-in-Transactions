@@ -39,51 +39,57 @@ function Login({ setAuth }) {
   };
 
   return (
-    <div className="login-container">
-      <div className="login-box">
-        <div className="login-header">
-          <h1>Fraud Detection System</h1>
-          <p>AI-Powered Security</p>
+    <div className="login-wrapper">
+      <div className="login-container">
+        <div className="login-box">
+          <div className="login-header">
+            <div className="login-logo">FD</div>
+            <h1>Fraud Detection</h1>
+            <p>Secure transaction monitoring system</p>
+          </div>
+
+          <form onSubmit={handleLogin}>
+            <div className="form-group">
+              <label>Email Address</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                disabled={loading}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                disabled={loading}
+              />
+            </div>
+
+            {error && (
+              <div className="alert alert-danger">
+                ⚠️ {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="login-btn"
+              disabled={loading}
+            >
+              {loading ? 'Signing in...' : 'Sign In'}
+            </button>
+          </form>
+
+          <p className="login-footer">
+            Demo: admin@example.com / password
+          </p>
         </div>
-
-        <form onSubmit={handleLogin}>
-          <div className="form-group">
-            <label>Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@example.com"
-              disabled={loading}
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="password"
-              disabled={loading}
-            />
-          </div>
-
-          {error && <div className="alert alert-danger">{error}</div>}
-
-          <button
-            type="submit"
-            className="btn btn-primary"
-            disabled={loading}
-            style={{ width: '100%' }}
-          >
-            {loading ? 'Logging in...' : 'Login'}
-          </button>
-        </form>
-
-        <p className="login-footer">
-          Demo credentials: admin@example.com / password
-        </p>
       </div>
     </div>
   );

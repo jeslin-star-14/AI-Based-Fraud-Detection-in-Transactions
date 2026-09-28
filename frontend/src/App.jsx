@@ -21,8 +21,8 @@ function App() {
   const Layout = ({ children }) => (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
       <Sidebar isOpen={sidebarOpen} />
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <Navbar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', marginLeft: sidebarOpen ? '280px' : '0', transition: 'margin-left var(--transition-normal)' }}>
+        <Navbar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} sidebarOpen={sidebarOpen} />
         <main style={{ 
           flex: 1, 
           padding: '2rem',

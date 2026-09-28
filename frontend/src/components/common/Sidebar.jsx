@@ -14,8 +14,10 @@ function Sidebar({ isOpen }) {
     { path: '/reports', label: 'Reports', icon: '▢' }
   ];
 
+  if (!isOpen) return null;
+
   return (
-    <aside className={`sidebar ${isOpen ? 'open' : 'closed'}`}>
+    <aside className="sidebar">
       <div className="sidebar-header">
         <div className="sidebar-logo">F</div>
         <h1>Fraud Shield</h1>

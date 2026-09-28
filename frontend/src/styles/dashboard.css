@@ -3,7 +3,6 @@
   grid-template-columns: 300px 1fr;
   gap: 2rem;
   padding: 2rem;
-  min-height: 100vh;
   background: var(--bg-secondary);
 }
 

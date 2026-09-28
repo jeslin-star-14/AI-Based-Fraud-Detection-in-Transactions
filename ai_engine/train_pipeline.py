@@ -1,83 +1,143 @@
+#!/usr/bin/env python
 """
-End-to-end training pipeline for the fraud detection AI engine.
+End-to-end training pipeline: data loading → feature engineering → train/val/test split
+→ model training → evaluation → save model artifacts.
 
-    python train_pipeline.py            # trains and saves the production models
-    python train_pipeline.py --compare  # also runs the model comparison report
-
-Produces (in models/saved_models/):
-    isolation_forest.pkl   <- production anomaly detection model
-    kmeans.pkl              <- production clustering model
-    scaler.pkl              <- fitted StandardScaler (needed at inference time)
-    metrics.pkl             <- evaluation metrics dict, for the backend + report
+Run: python ai_engine/train_pipeline.py
 """
 
 import os
 import sys
-import argparse
-import joblib
+import json
+import hashlib
+import logging
+from datetime import datetime
+from pathlib import Path
 
-sys.path.append(os.path.dirname(__file__))  # so `models.*`/`preprocessing.*` imports resolve
+import pandas as pd
+import numpy as np
 
-from data_generator import generate_dataset
-from preprocessing.data_cleaning import clean_transactions
-from preprocessing.feature_engineering import FEATURES, to_matrix
-from preprocessing.scaler_utils import fit_scaler, save_scaler
-from models.anomaly_detection.isolation_forest_model import IsolationForestModel
-from models.clustering.kmeans_model import KMeansModel
-from evaluation.metrics import evaluate_predictions, scores_to_predictions, print_report
+# Add project root to path
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
-SAVE_DIR = os.path.join(os.path.dirname(__file__), "models", "saved_models")
+from ai_engine.data_loader import PaySimLoader, load_paysim
+from ai_engine.preprocessing.feature_engineer import FeatureEngineer, time_based_split
+from ai_engine.models.ensemble_model import EnsembleModel
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 
-def train(run_comparison=False):
-    os.makedirs(SAVE_DIR, exist_ok=True)
+def compute_dataset_hash(df: pd.DataFrame) -> str:
+    """Compute hash of dataset for versioning."""
+    data_str = pd.util.hash_pandas_object(df, index=True).values.tobytes()
+    return hashlib.sha256(data_str).hexdigest()[:16]
 
-    print("Generating dataset...")
-    raw_df = generate_dataset(n_legit=4000, n_fraud=200)
 
-    print("Cleaning data...")
-    df = clean_transactions(raw_df)
-
-    X = to_matrix(df)
-    y = df["label"].values
-
-    print("Fitting scaler...")
-    scaler = fit_scaler(X)
-    X_scaled = scaler.transform(X)
-
-    print("Training Isolation Forest (anomaly detection)...")
-    iso_model = IsolationForestModel(n_estimators=200, contamination=0.05).fit(X_scaled)
-    anomaly_scores = iso_model.anomaly_scores(X_scaled)
-    preds, threshold = scores_to_predictions(anomaly_scores, percentile=95)
-    metrics = evaluate_predictions(y, preds, anomaly_scores)
-    print_report("Isolation Forest (production model)", metrics)
-
-    print("\nTraining KMeans (behavioral clustering)...")
-    kmeans_model = KMeansModel(n_clusters=5).fit(X_scaled)
-    print(f"  Inertia: {kmeans_model.inertia():.1f}")
-
-    print("\nSaving models to", SAVE_DIR)
-    iso_model.save(os.path.join(SAVE_DIR, "isolation_forest.pkl"))
-    kmeans_model.save(os.path.join(SAVE_DIR, "kmeans.pkl"))
-    save_scaler(scaler, os.path.join(SAVE_DIR, "scaler.pkl"))
-    joblib.dump(metrics, os.path.join(SAVE_DIR, "metrics.pkl"))
-    joblib.dump({"threshold": float(threshold), "features": FEATURES},
-                os.path.join(SAVE_DIR, "scoring_config.pkl"))
-
-    if run_comparison:
-        from evaluation.model_comparison import compare_anomaly_models, compare_clustering_models
-        print("\n" + "=" * 60)
-        print("MODEL COMPARISON REPORT")
-        print("=" * 60)
-        compare_anomaly_models(X_scaled, y)
-        compare_clustering_models(X_scaled)
-
-    print("\nDone.")
-    return metrics
+def run_training_pipeline():
+    """Execute full training pipeline."""
+    
+    logger.info("=" * 80)
+    logger.info("PHASE 1: REAL DATA AND TRAINING")
+    logger.info("=" * 80)
+    
+    # 1. Load dataset
+    logger.info("\n[1/5] Loading PaySim dataset...")
+    try:
+        df = load_paysim()
+    except FileNotFoundError as e:
+        logger.error(str(e))
+        return False
+    
+    dataset_hash = compute_dataset_hash(df)
+    logger.info(f"Dataset hash: {dataset_hash}")
+    
+    # 2. Feature engineering
+    logger.info("\n[2/5] Engineering features...")
+    engineer = FeatureEngineer()
+    df = engineer.engineer(df)
+    feature_names = engineer.get_feature_names()
+    
+    # 3. Time-based train/val/test split
+    logger.info("\n[3/5] Splitting dataset (time-based, no leakage)...")
+    train_df, val_df, test_df = time_based_split(
+        df,
+        train_frac=0.6,
+        val_frac=0.2
+    )
+    
+    # Separate features and labels
+    X_train = train_df[feature_names]
+    y_train = train_df['isFraud']
+    
+    X_val = val_df[feature_names]
+    y_val = val_df['isFraud']
+    
+    X_test = test_df[feature_names]
+    y_test = test_df['isFraud']
+    
+    logger.info(f"Train: {len(X_train)} ({y_train.mean():.2%} fraud)")
+    logger.info(f"Val:   {len(X_val)} ({y_val.mean():.2%} fraud)")
+    logger.info(f"Test:  {len(X_test)} ({y_test.mean():.2%} fraud)")
+    
+    # 4. Train ensemble model
+    logger.info("\n[4/5] Training ensemble model...")
+    model_id = f"paysim_ensemble_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
+    
+    model = EnsembleModel(
+        model_id=model_id,
+        w_supervised=0.7,
+        w_unsupervised=0.3,
+        threshold_flag=0.5,    # Flag for review
+        threshold_block=0.8    # Block transaction
+    )
+    
+    model.train(
+        X_train, y_train,
+        X_val, y_val,
+        feature_names=feature_names
+    )
+    
+    # 5. Evaluate model
+    logger.info("\n[5/5] Evaluating model...")
+    metrics = model.evaluate(X_test, y_test)
+    
+    # Save model
+    model_path = model.save()
+    
+    # Save training metadata
+    metadata = {
+        'model_id': model_id,
+        'pipeline_version': '1.0',
+        'trained_at': datetime.utcnow().isoformat(),
+        'dataset_hash': dataset_hash,
+        'dataset_size': len(df),
+        'train_samples': len(X_train),
+        'val_samples': len(X_val),
+        'test_samples': len(X_test),
+        'feature_count': len(feature_names),
+        'feature_names': feature_names,
+        'metrics': metrics,
+        'model_path': model_path
+    }
+    
+    metadata_path = Path(model_path) / "training_metadata.json"
+    with open(metadata_path, 'w') as f:
+        json.dump(metadata, f, indent=2)
+    
+    logger.info("\n" + "=" * 80)
+    logger.info("TRAINING COMPLETE")
+    logger.info("=" * 80)
+    logger.info(f"Model ID: {model_id}")
+    logger.info(f"Model saved to: {model_path}")
+    logger.info(f"Metrics: {json.dumps(metrics, indent=2)}")
+    
+    return True
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--compare", action="store_true", help="Also run the anomaly/clustering model comparison")
-    args = parser.parse_args()
-    train(run_comparison=args.compare)
+    success = run_training_pipeline()
+    sys.exit(0 if success else 1)

@@ -11,12 +11,18 @@ function Navbar({ onToggleSidebar, sidebarOpen }) {
   };
 
   return (
-    <nav className={`navbar ${!sidebarOpen ? 'sidebar-closed' : ''}`}>
+    <nav className="navbar">
       <div className="navbar-left">
         <button className="navbar-toggle" onClick={onToggleSidebar} title="Toggle sidebar">
           ☰
         </button>
-        <h2 className="navbar-title">Fraud Detection System</h2>
+        <div className="navbar-brand">
+          <div className="navbar-brand-icon">=</div>
+          <div className="navbar-brand-text">
+            <p className="navbar-brand-name">Fraud Detection</p>
+            <p className="navbar-brand-sub">System</p>
+          </div>
+        </div>
       </div>
       
       <div className="navbar-right">
@@ -24,17 +30,19 @@ function Navbar({ onToggleSidebar, sidebarOpen }) {
           <input type="text" placeholder="Search transactions..." />
         </div>
 
-        <div className="navbar-icons">
-          <button className="navbar-icon-btn" title="Notifications">🔔</button>
-          <button className="navbar-icon-btn" title="Settings">⚙️</button>
+        <div className="navbar-actions">
+          <button className="navbar-icon-btn notification" title="Notifications">🔔</button>
+          <button className="navbar-icon-btn" title="Settings">⚙</button>
           <button className="navbar-icon-btn" title="Help">?</button>
         </div>
+
+        <div className="navbar-divider"></div>
 
         <div className="navbar-user">
           <div className="navbar-user-avatar">AD</div>
           <div className="navbar-user-info">
-            <div className="navbar-user-name">Admin</div>
-            <div className="navbar-user-role">Administrator</div>
+            <p className="navbar-user-name">Admin</p>
+            <p className="navbar-user-role">Administrator</p>
           </div>
         </div>
 

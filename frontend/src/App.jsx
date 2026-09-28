@@ -14,19 +14,18 @@ import Navbar from './components/common/Navbar';
 import Sidebar from './components/common/Sidebar';
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+  const [isAuthenticated, setIsAuthenticated] = React.useState(true); // Set to true for testing
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
 
   // Layout wrapper for authenticated pages
   const Layout = ({ children }) => (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-secondary)' }}>
       <Sidebar isOpen={sidebarOpen} />
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', marginLeft: sidebarOpen ? '280px' : '0', transition: 'margin-left var(--transition-normal)' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <Navbar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} sidebarOpen={sidebarOpen} />
         <main style={{ 
           flex: 1, 
-          padding: '2rem',
-          backgroundColor: 'var(--bg-secondary)',
+          background: 'var(--bg-secondary)',
           overflowY: 'auto'
         }}>
           {children}

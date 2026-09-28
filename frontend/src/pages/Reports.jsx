@@ -6,41 +6,34 @@ function Reports() {
     {
       id: 1,
       title: 'Monthly Fraud Report',
-      description: 'Comprehensive fraud statistics and trends for the current month',
-      generated: '2024-09-20',
+      desc: 'Comprehensive fraud statistics and trends for the current month',
+      generated: '2024-09-26',
       transactions: 45230,
       fraudDetected: 342,
-      riskLevel: 'Low'
+      riskLevel: 'LOW',
+      colors: ['#5b7cfa', '#1dd1a1', '#ffa502']
     },
     {
       id: 2,
       title: 'Risk Analysis Dashboard',
-      description: 'Geographical and temporal risk distribution analysis',
-      generated: '2024-09-19',
+      desc: 'Geographical and temporal risk distribution analysis',
+      generated: '2024-09-25',
       transactions: 12450,
       fraudDetected: 89,
-      riskLevel: 'Medium'
+      riskLevel: 'MEDIUM',
+      colors: ['#5b7cfa', '#1dd1a1', '#ffa502']
     },
     {
       id: 3,
       title: 'AI Model Performance',
-      description: 'Accuracy metrics and model performance evaluation',
-      generated: '2024-09-18',
+      desc: 'Accuracy metrics and model performance evaluation',
+      generated: '2024-09-24',
       transactions: 8950,
       fraudDetected: 156,
-      riskLevel: 'High'
+      riskLevel: 'HIGH',
+      colors: ['#5b7cfa', '#1dd1a1', '#ff6348']
     }
   ]);
-
-  const [reportType, setReportType] = useState('monthly');
-
-  const handleGenerateReport = () => {
-    alert('Report generation started. This may take a few moments...');
-  };
-
-  const handleExport = (format) => {
-    alert(`Exporting report as ${format.toUpperCase()}...`);
-  };
 
   return (
     <div className="reports-page">
@@ -51,14 +44,12 @@ function Reports() {
 
       {/* Report Generator */}
       <div className="report-generator">
-        <div className="generator-header">
-          <h3>Generate New Report</h3>
-        </div>
+        <h3>Generate New Report</h3>
 
         <div className="generator-form">
           <div className="form-group">
             <label>Report Type</label>
-            <select value={reportType} onChange={(e) => setReportType(e.target.value)}>
+            <select defaultValue="monthly">
               <option value="monthly">Monthly Fraud Report</option>
               <option value="risk">Risk Analysis</option>
               <option value="performance">Model Performance</option>
@@ -69,90 +60,62 @@ function Reports() {
           <div className="form-group">
             <label>Date Range</label>
             <div className="date-range">
-              <input type="date" defaultValue="2024-09-01" />
+              <input type="date" defaultValue="2024-01-09" />
               <span>to</span>
-              <input type="date" defaultValue="2024-09-23" />
+              <input type="date" defaultValue="2024-23-09" />
             </div>
           </div>
 
-          <div className="form-actions">
-            <button className="btn-primary" onClick={handleGenerateReport}>
-              Generate Report
-            </button>
-            <button className="btn-secondary">
-              Schedule Report
-            </button>
-          </div>
+          <button className="btn-generate">Generate Report</button>
+          <button className="btn-schedule">Schedule Report</button>
         </div>
       </div>
 
-      {/* Reports List */}
+      {/* Recent Reports */}
       <div className="reports-section">
-        <h3>Recent Reports</h3>
+        <h2>Recent Reports</h2>
         <div className="reports-grid">
           {reports.map((report) => (
             <div key={report.id} className="report-card">
-              <div className="report-icon">📊</div>
-              <h4>{report.title}</h4>
-              <p className="report-description">{report.description}</p>
+              <div className="report-icon">
+                <svg viewBox="0 0 24 24" width="32" height="32">
+                  <rect x="4" y="4" width="3" height="8" fill={report.colors[0]}/>
+                  <rect x="10" y="8" width="3" height="8" fill={report.colors[1]}/>
+                  <rect x="16" y="2" width="3" height="14" fill={report.colors[2]}/>
+                </svg>
+              </div>
+              
+              <h3>{report.title}</h3>
+              <p>{report.desc}</p>
 
               <div className="report-stats">
                 <div className="stat">
-                  <span className="label">Transactions</span>
-                  <span className="value">{report.transactions.toLocaleString()}</span>
+                  <span className="stat-label">TRANSACTIONS</span>
+                  <span className="stat-value">{report.transactions.toLocaleString()}</span>
                 </div>
                 <div className="stat">
-                  <span className="label">Fraud Detected</span>
-                  <span className="value">{report.fraudDetected}</span>
+                  <span className="stat-label">FRAUD DETECTED</span>
+                  <span className="stat-value">{report.fraudDetected}</span>
                 </div>
                 <div className="stat">
-                  <span className="label">Risk Level</span>
-                  <span className={`risk-label risk-${report.riskLevel.toLowerCase()}`}>
+                  <span className="stat-label">RISK LEVEL</span>
+                  <span className={`risk-badge risk-${report.riskLevel.toLowerCase()}`}>
                     {report.riskLevel}
                   </span>
                 </div>
               </div>
 
               <div className="report-meta">
-                <small>Generated: {report.generated}</small>
+                Generated: {report.generated}
               </div>
 
               <div className="report-actions">
-                <button className="export-btn" onClick={() => handleExport('pdf')}>
-                  📄 PDF
-                </button>
-                <button className="export-btn" onClick={() => handleExport('excel')}>
-                  📊 Excel
-                </button>
-                <button className="export-btn" onClick={() => handleExport('csv')}>
-                  📋 CSV
-                </button>
+                <button className="export-btn">PDF</button>
+                <button className="export-btn">Excel</button>
+                <button className="export-btn">CSV</button>
               </div>
             </div>
           ))}
-        </div>
-      </div>
-
-      {/* Quick Export */}
-      <div className="quick-export">
-        <h3>Quick Export</h3>
-        <div className="export-options">
-          <button className="export-option">
-            <span className="icon">📈</span>
-            <span className="label">Executive Summary</span>
-          </button>
-          <button className="export-option">
-            <span className="icon">📊</span>
-            <span className="label">Detailed Analytics</span>
-          </button>
-          <button className="export-option">
-            <span className="icon">🗂️</span>
-            <span className="label">Raw Data</span>
-          </button>
-          <button className="export-option">
-            <span className="icon">📧</span>
-            <span className="label">Email Report</span>
-          </button>
         </div>
       </div>
     </div>

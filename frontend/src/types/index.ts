@@ -4,7 +4,8 @@ export type ChunkType = 'text' | 'table' | 'image' | 'chart';
 
 export type ProofLevel = 'Stated' | 'Calculated' | 'Inferred';
 
-export type RoleMode = 'Executive' | 'Auditor' | 'Data Scientist' | 'Student' | 'Legal Counsel';
+export type RoleMode = 'Executive' | 'Auditor' | 'Data Scientist' | 'Student' | 'Subject' | 'Legal Counsel';
+
 
 export interface BoundingBox {
   id: string;

@@ -1,42 +1,77 @@
 import React from 'react';
 import type { RoleMode } from '../types';
-import { ShieldCheck, UserCheck, Briefcase, GraduationCap, Scale, Cpu } from 'lucide-react';
+import { ShieldCheck, ShieldAlert, FileText, UserCheck, Briefcase, GraduationCap, Scale, Cpu } from 'lucide-react';
+
 
 interface HeaderProps {
   roleMode?: RoleMode;
   onRoleModeChange?: (role: RoleMode) => void;
   onOpenConflicts?: () => void;
   conflictCount?: number;
+  activeTab?: 'fraud' | 'documents';
+  onTabChange?: (tab: 'fraud' | 'documents') => void;
 }
 
 const ROLES: { id: RoleMode; label: string; icon: any; desc: string }[] = [
   { id: 'Executive', label: 'Executive', icon: Briefcase, desc: 'High-level summaries & ROI' },
-  { id: 'Auditor', label: 'Auditor', icon: ShieldCheck, desc: 'Precise cell-by-cell audit verification' },
-  { id: 'Data Scientist', label: 'Data Scientist', icon: Cpu, desc: 'Formulas & statistical derivations' },
-  { id: 'Student', label: 'Student', icon: GraduationCap, desc: 'Intuitive plain-language learning' },
-  { id: 'Legal Counsel', label: 'Legal Counsel', icon: Scale, desc: 'Contractual liability & compliance clauses' },
+  { id: 'Auditor', label: 'Fraud Analyst', icon: ShieldCheck, desc: 'Forensic audit verification & Bayes weights' },
+  { id: 'Data Scientist', label: 'AI Researcher', icon: Cpu, desc: 'Bayesian posterior & AO* graph traversal' },
+  { id: 'Subject', label: 'Subject', icon: GraduationCap, desc: 'Intuitive plain-language learning' },
+  { id: 'Legal Counsel', label: 'Compliance Officer', icon: Scale, desc: 'Regulatory compliance & SAR filing' },
 ];
 
 export const Header: React.FC<HeaderProps> = ({
-  roleMode = 'Executive',
+  roleMode = 'Auditor',
   onRoleModeChange,
   onOpenConflicts,
-  conflictCount = 0
+  conflictCount = 0,
+  activeTab = 'fraud',
+  onTabChange
 }) => {
   return (
-    <header className="h-14 bg-white border-b border-slate-200/80 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30 select-none">
+    <header className="h-14 bg-slate-900 border-b border-slate-800 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30 select-none">
       {/* Brand */}
       <div className="flex items-center space-x-3">
-        <div className="w-7 h-7 rounded-lg bg-[#0d5c4d] flex items-center justify-center text-white shadow-xs">
-          <div className="w-3.5 h-3.5 border-2 border-amber-300 rounded-[2px]" />
+        <div className="w-8 h-8 rounded-lg bg-red-600 flex items-center justify-center text-white shadow-md shadow-red-500/20">
+          <ShieldCheck className="w-5 h-5 text-white" />
         </div>
         <div className="flex flex-col">
-          <span className="text-lg font-sans tracking-tight text-slate-900 font-bold leading-none">
-            DOC-Q <span className="text-xs font-medium text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 ml-1">Verity 2.5</span>
+          <span className="text-sm font-sans tracking-tight text-white font-bold leading-none flex items-center gap-2">
+            AI-Based Fraud Detection in Transactions
+            <span className="text-[10px] font-semibold text-cyan-300 bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-800">
+              Bayes + AO*
+            </span>
           </span>
-          <span className="text-[10px] text-slate-400 font-medium leading-tight">Multimodal Document Intelligence</span>
+          <span className="text-[10px] text-slate-400 font-medium leading-tight">
+            Multimodal Receipt Forensics & Probabilistic Decision Trees
+          </span>
         </div>
       </div>
+
+      {/* Center Navigation Tabs */}
+      <div className="flex items-center bg-slate-800/90 p-1 rounded-lg border border-slate-700/80">
+        <button
+          onClick={() => onTabChange?.('fraud')}
+          className={`flex items-center space-x-1.5 px-3 py-1 rounded-md text-xs font-semibold transition-all ${activeTab === 'fraud'
+            ? 'bg-red-600 text-white shadow-xs'
+            : 'text-slate-400 hover:text-white hover:bg-slate-700/60'
+            }`}
+        >
+          <ShieldAlert className="w-3.5 h-3.5" />
+          <span>Fraud Detection & Screenshots</span>
+        </button>
+        <button
+          onClick={() => onTabChange?.('documents')}
+          className={`flex items-center space-x-1.5 px-3 py-1 rounded-md text-xs font-semibold transition-all ${activeTab === 'documents'
+            ? 'bg-slate-700 text-white shadow-xs'
+            : 'text-slate-400 hover:text-white hover:bg-slate-700/60'
+            }`}
+        >
+          <FileText className="w-3.5 h-3.5" />
+          <span>Document Intelligence</span>
+        </button>
+      </div>
+
 
       {/* Center / Right controls: Role Selector & System Capabilities */}
       <div className="flex items-center space-x-3">
@@ -55,11 +90,10 @@ export const Header: React.FC<HeaderProps> = ({
                   key={r.id}
                   onClick={() => onRoleModeChange?.(r.id)}
                   title={`${r.label}: ${r.desc}`}
-                  className={`flex items-center space-x-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all duration-150 ${
-                    isActive
-                      ? 'bg-[#0d5c4d] text-white shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
-                  }`}
+                  className={`flex items-center space-x-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all duration-150 ${isActive
+                    ? 'bg-[#0d5c4d] text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
+                    }`}
                 >
                   <Icon className="w-3.5 h-3.5" />
                   <span className="hidden md:inline">{r.label}</span>

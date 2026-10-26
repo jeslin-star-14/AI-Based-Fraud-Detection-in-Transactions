@@ -6,6 +6,7 @@ import { ChatPanel } from './components/ChatPanel/ChatPanel';
 import { EvidencePanel } from './components/EvidencePanel/EvidencePanel';
 import { ConflictModal } from './components/ConflictModal/ConflictModal';
 import { DocumentGapsModal } from './components/DocumentPanel/DocumentGapsModal';
+import { FraudDetectionPanel } from './components/FraudDetection/FraudDetectionPanel';
 import type { 
   DocumentItem, 
   ChatMessage, 
@@ -19,14 +20,18 @@ import type {
 } from './types';
 
 export const App: React.FC = () => {
+  // Navigation State
+  const [activeAppTab, setActiveAppTab] = useState<'fraud' | 'documents'>('fraud');
+
   // Application State
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chunks, setChunks] = useState<DocumentChunk[]>([]);
   const [isLoadingAnswer, setIsLoadingAnswer] = useState<boolean>(false);
-  const [roleMode, setRoleMode] = useState<RoleMode>('Executive');
+  const [roleMode, setRoleMode] = useState<RoleMode>('Auditor');
   const language: LanguageCode = 'en';
+
 
   // Conflict & Gaps Modal State
   const [isConflictModalOpen, setIsConflictModalOpen] = useState(false);
@@ -585,10 +590,16 @@ export const App: React.FC = () => {
         onRoleModeChange={setRoleMode}
         onOpenConflicts={() => setIsConflictModalOpen(true)}
         conflictCount={activeConflicts.length}
+        activeTab={activeAppTab}
+        onTabChange={setActiveAppTab}
       />
 
-      {/* Main 3-Panel Workspace */}
-      <main className="flex-1 flex flex-row overflow-hidden relative">
+      {activeAppTab === 'fraud' ? (
+        <FraudDetectionPanel />
+      ) : (
+        /* Main 3-Panel Workspace */
+        <main className="flex-1 flex flex-row overflow-hidden relative">
+
         {/* Left: Document Panel */}
         {isLeftPanelOpen && (
           <div
@@ -704,6 +715,8 @@ export const App: React.FC = () => {
           </div>
         )}
       </main>
+      )}
+
 
       {/* Cross-Document Conflict Modal */}
       <ConflictModal

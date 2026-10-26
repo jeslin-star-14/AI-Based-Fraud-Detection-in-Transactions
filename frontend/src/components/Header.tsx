@@ -79,34 +79,23 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Center / Right controls: Role Selector & System Capabilities */}
       <div className="flex items-center space-x-3">
-        {/* Role Mode Selector */}
-        <div className="hidden lg:flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
-          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-2 flex items-center gap-1">
-            <UserCheck className="w-3.5 h-3.5 text-slate-700" />
-            Persona:
-          </span>
-          <div className="flex items-center space-x-1">
-            {ROLES.map((r) => {
-              const Icon = r.icon;
-              const isActive = roleMode === r.id;
-              return (
-                <button
-                  key={r.id}
-                  onClick={() => onRoleModeChange?.(r.id)}
-                  title={`${r.label}: ${r.desc}`}
-                  className={`flex items-center space-x-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
-                    isActive
-                      ? 'bg-slate-900 text-white shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  <span className="hidden xl:inline">{r.label}</span>
-                </button>
-              );
-            })}
-          </div>
+        {/* Sleek Persona Selector Dropdown */}
+        <div className="flex items-center gap-2 bg-slate-100 pl-3 pr-2 py-1 rounded-xl border border-slate-200">
+          <UserCheck className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+          <span className="text-xs font-bold text-slate-700">Persona:</span>
+          <select
+            value={roleMode}
+            onChange={(e) => onRoleModeChange?.(e.target.value as RoleMode)}
+            className="bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs font-semibold text-slate-900 focus:outline-hidden focus:border-slate-500 shadow-2xs cursor-pointer"
+          >
+            {ROLES.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.label}
+              </option>
+            ))}
+          </select>
         </div>
+
 
         {/* Conflicts Modal Quick Action */}
         {onOpenConflicts && (

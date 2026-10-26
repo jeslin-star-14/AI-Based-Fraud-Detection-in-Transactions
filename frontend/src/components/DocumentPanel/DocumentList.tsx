@@ -64,21 +64,22 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                 onClick={() => onSelectDocument(doc.id)}
                 className={`p-3 rounded-xl border transition-all cursor-pointer group relative ${
                   isSelected
-                    ? 'bg-[#eaf5f2] border-[#cbe8e1]'
-                    : 'bg-white border-slate-200/80 hover:border-slate-300'
+                    ? 'bg-indigo-50/70 border-indigo-300 shadow-2xs'
+                    : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
                 }`}
               >
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2.5">
                   {/* File Badge */}
                   <div
-                    className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold text-[10px] uppercase border shrink-0 ${
+                    className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold text-[10px] uppercase border shrink-0 transition-colors ${
                       isSelected
-                        ? 'bg-white text-[#0d5c4d] border-[#bce2d8]'
-                        : 'bg-slate-50 text-slate-600 border-slate-200'
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                        : 'bg-slate-100 text-slate-700 border-slate-200'
                     }`}
                   >
                     {getBadgeLabel(doc.type)}
                   </div>
+
 
                   {/* Text Metadata */}
                   <div className="min-w-0 flex-1">

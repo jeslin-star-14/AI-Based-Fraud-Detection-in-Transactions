@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { UploadCloud } from 'lucide-react';
 import type { LanguageCode } from '../../types';
 
 interface FileUploadZoneProps {
@@ -42,10 +43,10 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       onClick={() => fileInputRef.current?.click()}
-      className={`border border-dashed rounded-xl py-6 px-4 text-center cursor-pointer transition-all ${
+      className={`border-2 border-dashed rounded-xl py-5 px-4 text-center cursor-pointer transition-all ${
         isDragOver
-          ? 'border-[#0d5c4d] bg-[#eaf5f2]'
-          : 'border-slate-300 hover:border-slate-400 bg-white'
+          ? 'border-indigo-500 bg-indigo-50/50'
+          : 'border-slate-300 hover:border-indigo-400 bg-white hover:bg-slate-50/60 shadow-2xs'
       }`}
     >
       <input
@@ -57,14 +58,18 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({
         className="hidden"
       />
 
-      <div className="flex flex-col items-center justify-center space-y-1">
+      <div className="flex flex-col items-center justify-center space-y-1.5">
+        <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 mb-0.5">
+          <UploadCloud className="w-4 h-4 text-slate-600" />
+        </div>
         <p className="text-xs font-bold text-slate-800">
-          Drop files here
+          Upload Documents
         </p>
-        <p className="text-[11px] text-slate-400">
-          PDF, Word, slides, scans
+        <p className="text-[11px] text-slate-500">
+          PDF, Word, Scans & Receipts
         </p>
       </div>
     </div>
   );
 };
+

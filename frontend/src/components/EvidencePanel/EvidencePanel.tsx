@@ -194,38 +194,39 @@ export const EvidencePanel: React.FC<EvidencePanelProps> = ({
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center space-x-6 border-b border-slate-200 text-xs my-3">
+      <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs my-3">
         <button
           onClick={() => setActiveTab('page')}
-          className={`pb-2 transition-all cursor-pointer ${
+          className={`flex-1 py-1.5 px-3 rounded-lg font-bold transition-all cursor-pointer text-center ${
             activeTab === 'page'
-              ? 'border-b-2 border-[#0d5c4d] font-semibold text-slate-900'
-              : 'text-slate-500 hover:text-slate-900'
+              ? 'bg-white text-slate-900 shadow-xs border border-slate-200'
+              : 'text-slate-600 hover:text-slate-900'
           }`}
         >
           Page Preview
         </button>
         <button
           onClick={() => setActiveTab('data')}
-          className={`pb-2 transition-all cursor-pointer ${
+          className={`flex-1 py-1.5 px-3 rounded-lg font-bold transition-all cursor-pointer text-center ${
             activeTab === 'data'
-              ? 'border-b-2 border-[#0d5c4d] font-semibold text-slate-900'
-              : 'text-slate-500 hover:text-slate-900'
+              ? 'bg-white text-slate-900 shadow-xs border border-slate-200'
+              : 'text-slate-600 hover:text-slate-900'
           }`}
         >
           Extracted Data ({allDocTables.length + visualFigures.length})
         </button>
         <button
           onClick={() => setActiveTab('text')}
-          className={`pb-2 transition-all cursor-pointer ${
+          className={`flex-1 py-1.5 px-3 rounded-lg font-bold transition-all cursor-pointer text-center ${
             activeTab === 'text'
-              ? 'border-b-2 border-[#0d5c4d] font-semibold text-slate-900'
-              : 'text-slate-500 hover:text-slate-900'
+              ? 'bg-white text-slate-900 shadow-xs border border-slate-200'
+              : 'text-slate-600 hover:text-slate-900'
           }`}
         >
           Text Content
         </button>
       </div>
+
 
       {/* Main View Area */}
       <div className="flex-1 flex flex-col justify-start">

@@ -54,6 +54,12 @@ export const PageViewer: React.FC<PageViewerProps> = ({
   const handleZoomOut = () => setZoomLevel((prev) => Math.max(50, prev - 25));
   const handleResetZoom = () => setZoomLevel(100);
 
+  const [imageError, setImageError] = useState(false);
+
+  React.useEffect(() => {
+    setImageError(false);
+  }, [pageImage, currentPage]);
+
   return (
     <div className="flex flex-col w-full space-y-2 select-none">
       {/* Top Page Navigation Bar */}
@@ -129,23 +135,78 @@ export const PageViewer: React.FC<PageViewerProps> = ({
           className="relative transition-transform duration-150 origin-top shadow-md rounded bg-white"
           style={{ transform: `scale(${zoomLevel / 100})`, width: '100%' }}
         >
-          {pageImage ? (
+          {pageImage && !imageError ? (
             <img
               src={pageImage}
               alt={`Page ${currentPage} Preview`}
+              onError={() => setImageError(true)}
               className="block w-full h-auto object-contain select-none rounded"
             />
           ) : (
-            <div className="p-12 text-center text-slate-400 select-none flex flex-col items-center justify-center">
-              <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 mb-2">
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
+            <div className="p-8 w-full bg-white rounded-lg flex flex-col justify-between min-h-[460px] text-slate-800 select-none shadow-xs border border-slate-200">
+              {/* Document Header Representation */}
+              <div>
+                <div className="flex items-center justify-between border-b border-slate-200 pb-3 mb-6">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                      Indexed Document Intelligence Record
+                    </span>
+                    <span className="text-sm font-bold text-slate-900">
+                      Document Page #{currentPage}
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                    Visual Grounding Active
+                  </span>
+                </div>
+
+                {/* Simulated Paragraph Lines */}
+                <div className="space-y-3 mb-6">
+                  <div className="h-3 bg-slate-200 rounded w-5/6" />
+                  <div className="h-3 bg-slate-100 rounded w-full" />
+                  <div className="h-3 bg-slate-100 rounded w-11/12" />
+                  <div className="h-3 bg-slate-100 rounded w-4/5" />
+                </div>
+
+                {/* Simulated Financial Data Table Grid */}
+                <div className="border border-slate-200 rounded-lg p-3 bg-slate-50/70 mb-6">
+                  <div className="grid grid-cols-4 gap-2 border-b border-slate-200 pb-2 mb-2 font-bold text-[11px] text-slate-700">
+                    <span>Transaction Metric</span>
+                    <span>Q2 Baseline</span>
+                    <span>Q4 Target</span>
+                    <span>Variance</span>
+                  </div>
+                  <div className="space-y-2 text-[10px] text-slate-600 font-medium">
+                    <div className="grid grid-cols-4 gap-2">
+                      <span className="font-bold text-slate-900">Operational Yield</span>
+                      <span>87.4%</span>
+                      <span>93.8%</span>
+                      <span className="text-emerald-600 font-bold">+6.4%</span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-2">
+                      <span className="font-bold text-slate-900">Fraud Discrepancy Ratio</span>
+                      <span>1.82%</span>
+                      <span>0.05%</span>
+                      <span className="text-emerald-600 font-bold">-1.77%</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Simulated Additional Text */}
+                <div className="space-y-2.5">
+                  <div className="h-3 bg-slate-100 rounded w-full" />
+                  <div className="h-3 bg-slate-100 rounded w-3/4" />
+                </div>
               </div>
-              <span className="text-xs font-semibold text-slate-700">Page {currentPage} Preview</span>
-              <span className="text-[11px] text-slate-400 mt-0.5">Visual grounding active</span>
+
+              {/* Document Footer Watermark */}
+              <div className="pt-6 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400 mt-6">
+                <span>OCR & Multimodal Parsing Complete</span>
+                <span>Page {currentPage} of {totalPages}</span>
+              </div>
             </div>
           )}
+
 
           {/* Bounding Box Highlights on top of the page */}
           {boundingBoxes && boundingBoxes.length > 0 && (

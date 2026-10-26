@@ -583,7 +583,10 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-[#f8fafc] text-slate-900">
+    <div 
+      className="flex flex-col h-screen overflow-hidden bg-[#fbfcfd] text-slate-900"
+      style={{ fontFamily: "'Times New Roman', Times, 'Nimbus Roman No9 L', Georgia, serif" }}
+    >
       {/* Header with Role Mode & Conflicts Button */}
       <Header 
         roleMode={roleMode}

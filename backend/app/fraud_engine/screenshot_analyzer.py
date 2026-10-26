@@ -272,11 +272,12 @@ class ScreenshotFraudAnalyzer:
         fraud_confidence = bayes_result.risk_score_100
 
         verdict_title = (
-            "🚨 CRITICAL FRAUD DETECTED" if fraud_confidence >= 85 else
-            "⚠️ HIGH FRAUD RISK" if fraud_confidence >= 60 else
-            "🔍 SUSPICIOUS TRANSACTION" if fraud_confidence >= 35 else
-            "✅ LEGITIMATE TRANSACTION VERIFIED"
+            "CRITICAL FRAUD DETECTED" if fraud_confidence >= 85 else
+            "HIGH FRAUD RISK" if fraud_confidence >= 60 else
+            "SUSPICIOUS TRANSACTION" if fraud_confidence >= 35 else
+            "LEGITIMATE TRANSACTION VERIFIED"
         )
+
 
         recommendation = (
             "Immediate Block: Freeze transaction, halt disbursement, and file automated SAR report." if fraud_confidence >= 60 else

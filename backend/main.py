@@ -877,6 +877,7 @@ class TransactionAnalysisRequest(BaseModel):
     transaction_id: Optional[str] = "TXN_78291039"
     amount: float = Field(..., description="Transaction amount")
     currency: str = "INR"
+    utr: Optional[str] = Field(None, description="12-digit UPI UTR reference identifier")
     sender_account: Optional[str] = "user_account_442"
     beneficiary_account: Optional[str] = "merchant_outlet_vpa"
     timestamp: Optional[str] = None
@@ -1003,6 +1004,14 @@ def analyze_transaction_data(req: TransactionAnalysisRequest):
     ao_res = ao_star_engine.run_ao_star(graph, root_id="GOAL_FRAUD")
 
     is_fraud = bayes_res.posterior_probability >= 0.50
+    agent_advisory = screenshot_fraud_agent.generate_gemini_agent_advisory(
+        image_path=None,
+        extracted={"amount": req.amount, "utr": req.utr, "payee": req.beneficiary_account},
+        forensics={"has_clipping_artifacts": flags.get("flag_visual_tamper", False)},
+        bayes_result=bayes_res,
+        ao_result=ao_res
+    )
+
     return {
         "success": True,
         "transaction_id": req.transaction_id,
@@ -1015,6 +1024,7 @@ def analyze_transaction_data(req: TransactionAnalysisRequest):
             "risk_level": bayes_res.risk_level,
             "recommendation": "Block transaction and alert risk operations." if is_fraud else "Approve transaction."
         },
+        "gemini_agent_advisory": agent_advisory,
         "bayesian_analysis": {
             "prior_probability": bayes_res.prior_probability,
             "posterior_probability": bayes_res.posterior_probability,

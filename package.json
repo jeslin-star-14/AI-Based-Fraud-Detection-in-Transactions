@@ -1,0 +1,14 @@
+{
+  "name": "ai-based-fraud-detection-in-transactions",
+  "version": "1.0.0",
+  "description": "AI-Based Fraud Detection in Transactions",
+  "scripts": {
+    "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"blue,green\" \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:backend": "bash -c 'if [ -d venv ]; then source venv/bin/activate; fi; cd backend && python3 -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload'",
+    "build": "npm --prefix frontend run build"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

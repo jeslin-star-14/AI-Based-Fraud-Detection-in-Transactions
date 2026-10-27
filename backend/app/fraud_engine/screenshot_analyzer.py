@@ -116,6 +116,22 @@ class ScreenshotFraudAnalyzer:
                     except Exception:
                         pass
 
+        # Standalone decimal amount fallback (e.g. '1,450.00' or '85,000.00'), skipping timestamps
+        if extracted["amount"] is None:
+            for token in ocr_tokens:
+                txt = token["text"].strip()
+                if re.search(r'\b(?:AM|PM|am|pm|hrs|hours|min|sec)\b', txt, re.IGNORECASE):
+                    continue
+                dec_match = re.search(r'\b([\d,]{1,10}\.\d{2})\b', txt)
+                if dec_match:
+                    try:
+                        val = float(dec_match.group(1).replace(",", ""))
+                        extracted["amount"] = val
+                        amt_box = token["box"]
+                        break
+                    except Exception:
+                        pass
+
         # Locate amount bounding box from matching token
         if extracted["amount"] is not None and amt_box is None:
             amt_target = str(int(extracted["amount"]))
@@ -125,17 +141,20 @@ class ScreenshotFraudAnalyzer:
                     break
 
         # Extract UTR / Reference ID (UPI UTR is 12 digits, e.g. 329103948192)
-        utr_match = re.search(r'(?:UTR|UPI Ref(?:erence)?(?:\s*No)?|Txn\s*ID)[:\s]*([A-Za-z0-9]{8,18})', raw_text, re.IGNORECASE)
+        # Priority 1: UPI Ref ID / UTR line
+        utr_match = re.search(r'(?:UPI\s*Ref(?:erence)?(?:\s*ID|\s*No)?(?:\s*\([A-Za-z0-9]+\))?|UTR(?:\s*No|\s*ID)?|Ref\s*No)[:\s]*([A-Za-z0-9_\-]{6,24})', raw_text, re.IGNORECASE)
         if utr_match:
             extracted["utr"] = utr_match.group(1).strip()
         else:
+            # Priority 2: Look for 12-digit NPCI numeric string
             digits12 = re.search(r'\b\d{12}\b', raw_text)
             if digits12:
                 extracted["utr"] = digits12.group(0)
             else:
-                digits_any = re.search(r'(?:Ref|UTR|Txn)?\s*([0-9]{8,16})', raw_text, re.IGNORECASE)
-                if digits_any:
-                    extracted["utr"] = digits_any.group(1)
+                # Priority 3: Generic Txn ID
+                txn_match = re.search(r'(?:Txn\s*ID|Transaction\s*ID)[:\s]*([A-Za-z0-9_\-]{8,24})', raw_text, re.IGNORECASE)
+                if txn_match:
+                    extracted["utr"] = txn_match.group(1).strip()
 
         # Locate UTR bounding box
         if extracted["utr"] is not None:
@@ -547,10 +566,16 @@ class ScreenshotFraudAnalyzer:
             })
 
         # Evidence Rule 4: Beneficiary Mismatch
-        if gemini_insights.get("beneficiary_mismatch", False) or (manual_override and manual_override.get("flag_beneficiary_mismatch", False)):
+        is_payee_suspicious = False
+        payee_str = str(extracted.get("payee") or "").lower()
+        raw_text_lower = extracted.get("raw_text", "").lower()
+        if any(w in payee_str or w in raw_text_lower for w in ["anonymous", "escrow", "quickcash", "p2p transfer", "fakevpa"]):
+            is_payee_suspicious = True
+
+        if is_payee_suspicious or gemini_insights.get("beneficiary_mismatch", False) or (manual_override and manual_override.get("flag_beneficiary_mismatch", False)):
             detected_evidences.append({
                 "id": "beneficiary_mismatch",
-                "details": "Beneficiary VPA does not match verified merchant registry."
+                "details": f"Beneficiary identifier '{extracted.get('payee') or 'Unverified'}' flagged as high-risk unverified counterparty."
             })
             payee_coords = detected_boxes.get("payee")
             if payee_coords:
@@ -562,7 +587,11 @@ class ScreenshotFraudAnalyzer:
                 })
 
         # Evidence Rule 5: Missing Watermark / Bank Security Badges
-        if gemini_insights.get("missing_watermark", False) or (manual_override and manual_override.get("flag_missing_watermark", False)):
+        is_watermark_missing = False
+        if any(w in raw_text_lower for w in ["missing security seal", "watermark: not_found", "not_found (missing"]):
+            is_watermark_missing = True
+
+        if is_watermark_missing or gemini_insights.get("missing_watermark", False) or (manual_override and manual_override.get("flag_missing_watermark", False)):
             detected_evidences.append({
                 "id": "missing_watermark_elements",
                 "details": "Receipt layout missing NPCI or official issuer verification seals."

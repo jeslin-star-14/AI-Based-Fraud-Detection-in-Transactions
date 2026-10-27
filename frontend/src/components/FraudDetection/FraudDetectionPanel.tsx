@@ -548,7 +548,7 @@ export const FraudDetectionPanel: React.FC<{ roleMode?: RoleMode }> = ({ roleMod
                       onError={(e) => {
                         const target = e.currentTarget;
                         if (analysisResult?.image_url && !target.src.includes('127.0.0.1')) {
-                          target.src = `http://127.0.0.1:8000${analysisResult.image_url}`;
+                          target.src = `http://127.0.0.1:8001${analysisResult.image_url}`;
                         }
                       }}
                     />

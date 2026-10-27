@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   ShieldAlert, 
   ShieldCheck,
@@ -89,6 +89,33 @@ export const FraudDetectionPanel: React.FC = () => {
       // ignore
     }
   }, [detectionHistory]);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleDeleteImage = () => {
+    if (previewUrl && previewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setPreviewUrl(null);
+    setAnalysisResult(null);
+    setExtractedData({
+      amount: null,
+      utr: null,
+      beneficiary: null,
+      status: null
+    });
+    setAutoEvidenceFlags({
+      flag_visual_tamper: false,
+      flag_invalid_utr: false,
+      flag_amount_anomaly: false,
+      flag_beneficiary_mismatch: false,
+      flag_time_anomaly: false,
+      flag_missing_watermark: false
+    });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -303,6 +330,7 @@ export const FraudDetectionPanel: React.FC = () => {
                   </>
                 )}
                 <input
+                  ref={fileInputRef}
                   type="file"
                   accept="image/*"
                   onChange={handleFileUpload}
@@ -319,11 +347,29 @@ export const FraudDetectionPanel: React.FC = () => {
                       <Maximize2 className="w-3.5 h-3.5 text-slate-500" />
                       Dynamic Forensic Annotations
                     </span>
-                    <span className="text-xs font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 font-mono">
-                      {analysisResult?.bounding_boxes?.length || 0} regions identified
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 font-mono">
+                        {analysisResult?.bounding_boxes?.length || 0} regions
+                      </span>
+                      <button
+                        onClick={handleDeleteImage}
+                        className="flex items-center gap-1 px-2.5 py-0.5 rounded text-xs font-bold text-rose-700 hover:text-rose-900 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors shadow-2xs font-mono"
+                        title="Delete uploaded image and reset inspector"
+                      >
+                        <Trash2 className="w-3 h-3 text-rose-600" />
+                        <span>Delete Image</span>
+                      </button>
+                    </div>
                   </div>
-                  <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-100">
+                  <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-100 group">
+                    {/* Quick overlay delete button */}
+                    <button
+                      onClick={handleDeleteImage}
+                      className="absolute top-2 right-2 p-1.5 bg-white/95 hover:bg-rose-50 text-slate-600 hover:text-rose-700 rounded-lg border border-slate-200 shadow-sm transition-all z-10 opacity-80 group-hover:opacity-100"
+                      title="Remove Image"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                    </button>
                     <img
                       src={previewUrl || analysisResult?.image_url}
                       alt="Transaction Evidence Inspection"

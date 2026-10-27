@@ -230,9 +230,37 @@ class ScreenshotFraudAnalyzer:
                     continue
 
             raw_text = " ".join(t["text"] for t in tokens)
+            if not raw_text.strip():
+                raise RuntimeError("EasyOCR returned empty text, falling back to pytesseract")
             return raw_text, tokens
         except Exception as e:
-            logger.warning(f"EasyOCR extraction exception: {e}")
+            logger.warning(f"EasyOCR extraction exception or empty: {e}. Falling back to pytesseract.")
+            try:
+                import pytesseract
+                cv_img = cv2.imread(image_path)
+                if cv_img is not None:
+                    h, w = cv_img.shape[:2]
+                    data = pytesseract.image_to_data(cv_img, output_type=pytesseract.Output.DICT)
+                    tokens = []
+                    n_boxes = len(data['text'])
+                    for i in range(n_boxes):
+                        t_str = data['text'][i].strip()
+                        if not t_str:
+                            continue
+                        x, y, bw, bh = data['left'][i], data['top'][i], data['width'][i], data['height'][i]
+                        ymin = max(0.0, min(1.0, float(y) / float(h)))
+                        xmin = max(0.0, min(1.0, float(x) / float(w)))
+                        ymax = max(0.0, min(1.0, float(y + bh) / float(h)))
+                        xmax = max(0.0, min(1.0, float(x + bw) / float(w)))
+                        tokens.append({
+                            "text": t_str,
+                            "box": [round(ymin, 4), round(xmin, 4), round(ymax, 4), round(xmax, 4)],
+                            "conf": float(data['conf'][i]) / 100.0 if 'conf' in data else 0.8
+                        })
+                    raw_text = " ".join(t["text"] for t in tokens)
+                    return raw_text, tokens
+            except Exception as te:
+                logger.warning(f"Pytesseract fallback failed: {te}")
             return "", []
 
     def _detect_tamper_contour_box(self, image_path: str) -> Optional[List[float]]:

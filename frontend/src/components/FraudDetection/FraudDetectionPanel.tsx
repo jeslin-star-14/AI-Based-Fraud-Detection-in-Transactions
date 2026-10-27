@@ -46,6 +46,7 @@ export const FraudDetectionPanel: React.FC = () => {
 
   // Upload preview state
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Extracted parameters strictly from backend response (no hardcoded fallbacks)
   const [extractedData, setExtractedData] = useState<{
@@ -100,6 +101,7 @@ export const FraudDetectionPanel: React.FC = () => {
     }
     setPreviewUrl(null);
     setAnalysisResult(null);
+    setErrorMessage(null);
     setExtractedData({
       amount: null,
       utr: null,
@@ -126,12 +128,17 @@ export const FraudDetectionPanel: React.FC = () => {
       return;
     }
 
-    if (previewUrl && previewUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(previewUrl);
-    }
+    setErrorMessage(null);
 
-    const objectUrl = URL.createObjectURL(file);
-    setPreviewUrl(objectUrl);
+    // Read immediately as Base64 Data URL so preview is 100% resilient
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (typeof e.target?.result === 'string') {
+        setPreviewUrl(e.target.result);
+      }
+    };
+    reader.readAsDataURL(file);
+
     setIsLoading(true);
 
     const formData = new FormData();
@@ -142,6 +149,10 @@ export const FraudDetectionPanel: React.FC = () => {
         method: 'POST',
         body: formData
       });
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Server returned status ${res.status}: ${errorText || res.statusText}`);
+      }
       const data = await res.json();
       setAnalysisResult(data);
 
@@ -210,8 +221,9 @@ export const FraudDetectionPanel: React.FC = () => {
       };
       setDetectionHistory(prev => [newHistoryItem, ...prev]);
 
-    } catch (err) {
+    } catch (err: any) {
       console.error('Screenshot forensic analysis failed:', err);
+      setErrorMessage(err?.message || 'Forensic analysis failed to reach backend API. Please ensure the backend server is running.');
     } finally {
       setIsLoading(false);
     }
@@ -220,6 +232,17 @@ export const FraudDetectionPanel: React.FC = () => {
   // Clipboard Paste Support: Allows user to press Ctrl+V / Cmd+V to paste screenshot from clipboard
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
+      // 1. First check clipboardData.files (direct screenshot / copied file)
+      if (e.clipboardData?.files && e.clipboardData.files.length > 0) {
+        for (let i = 0; i < e.clipboardData.files.length; i++) {
+          const file = e.clipboardData.files[i];
+          if (file.type.startsWith('image/')) {
+            processImageFile(file);
+            return;
+          }
+        }
+      }
+      // 2. Next check clipboardData.items (copied image from browser or clipboard stream)
       const items = e.clipboardData?.items;
       if (!items) return;
       for (let i = 0; i < items.length; i++) {
@@ -227,7 +250,7 @@ export const FraudDetectionPanel: React.FC = () => {
           const file = items[i].getAsFile();
           if (file) {
             processImageFile(file);
-            break;
+            return;
           }
         }
       }
@@ -380,6 +403,23 @@ export const FraudDetectionPanel: React.FC = () => {
                 Drop any mobile payment screenshot, banking voucher, or document. Text extraction, domain classification, and forensics run automatically. You can also paste directly from clipboard (Ctrl+V / Cmd+V).
               </p>
 
+              {/* Connection or Upload Error Alert Banner */}
+              {errorMessage && (
+                <div className="mb-4 p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs font-serif flex items-start gap-2.5 shadow-2xs">
+                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="font-bold text-rose-900 mb-0.5">Forensic Analysis Connection Alert</p>
+                    <p className="text-rose-700 leading-relaxed">{errorMessage}</p>
+                  </div>
+                  <button
+                    onClick={() => setErrorMessage(null)}
+                    className="text-rose-500 hover:text-rose-800 text-sm font-bold ml-1"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+
               <label 
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
@@ -448,6 +488,12 @@ export const FraudDetectionPanel: React.FC = () => {
                       src={previewUrl || analysisResult?.image_url}
                       alt="Transaction Evidence Inspection"
                       className="w-full max-h-72 object-contain mx-auto bg-slate-950/5"
+                      onError={(e) => {
+                        const target = e.currentTarget;
+                        if (analysisResult?.image_url && !target.src.includes('127.0.0.1')) {
+                          target.src = `http://127.0.0.1:8000${analysisResult.image_url}`;
+                        }
+                      }}
                     />
                     {analysisResult?.bounding_boxes?.map((box: any, i: number) => {
                       const [ymin, xmin, ymax, xmax] = box.box_2d || [0, 0, 0, 0];

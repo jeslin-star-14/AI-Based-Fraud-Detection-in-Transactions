@@ -685,38 +685,55 @@ class ScreenshotFraudAnalyzer:
         3. Is it safe?
         4. Detailed forensic evaluation & actionable guidance.
         """
-        # Try direct Gemini API query if key configured
-        if GEMINI_API_KEY and GEMINI_API_KEY != "your_gemini_api_key_here" and image_path:
+        # Check for configured Gemma or Gemini API keys
+        active_api_key = (
+            os.getenv("GEMMA_API_KEY") or 
+            os.getenv("GOOGLE_API_KEY") or 
+            (GEMINI_API_KEY if GEMINI_API_KEY and GEMINI_API_KEY != "your_gemini_api_key_here" else None)
+        )
+
+        if active_api_key and image_path:
             try:
                 import google.generativeai as genai
-                genai.configure(api_key=GEMINI_API_KEY)
-                model = genai.GenerativeModel(VLM_MODEL)
-                img = Image.open(image_path)
-                prompt = f"""
-                You are a senior banking financial crime forensic AI agent.
-                Analyze this transaction screenshot or payment document.
-                Extracted fields:
-                Amount: {extracted.get('amount')}, UTR: {extracted.get('utr')}, Payee: {extracted.get('payee')}
-                Bayesian posterior: {bayes_result.posterior_probability:.4f}
-                AO* proved: {ao_result.is_fraud_proved}
+                genai.configure(api_key=active_api_key)
+                
+                # Try preferred multimodal models: gemini-2.0-flash, gemma-2-27b-it, or gemini-1.5-flash
+                candidate_models = [VLM_MODEL, "gemini-2.0-flash", "gemini-1.5-flash", "gemma-2-27b-it"]
+                model_inst = None
+                for m_name in candidate_models:
+                    try:
+                        model_inst = genai.GenerativeModel(m_name)
+                        break
+                    except Exception:
+                        continue
+                
+                if model_inst:
+                    img = Image.open(image_path)
+                    prompt = f"""
+                    You are a senior banking financial crime forensic AI agent powered by Gemma/Gemini Multimodal Intelligence.
+                    Analyze this transaction screenshot or payment document.
+                    Extracted fields:
+                    Amount: {extracted.get('amount')}, UTR: {extracted.get('utr')}, Payee: {extracted.get('payee')}
+                    Bayesian posterior: {bayes_result.posterior_probability:.4f}
+                    AO* proved: {ao_result.is_fraud_proved}
 
-                Answer strictly in valid JSON:
-                {{
-                  "what_is_this": "Exact document type and interface description",
-                  "payment_purpose": "Inferred reason/category of payment",
-                  "is_safe": true/false,
-                  "safety_status": "SAFE & VERIFIED" or "CRITICAL FRAUD / UNSAFE",
-                  "detailed_reasoning": "Paragraph explaining findings",
-                  "suggested_actions": ["action 1", "action 2", "action 3"]
-                }}
-                """
-                resp = model.generate_content([prompt, img])
-                text = resp.text.strip()
-                if text.startswith("```"):
-                    text = re.sub(r"^```(?:json)?\n|\n```$", "", text, flags=re.MULTILINE)
-                return json.loads(text)
+                    Answer strictly in valid JSON:
+                    {{
+                      "what_is_this": "Exact document type and interface description",
+                      "payment_purpose": "Inferred reason/category of payment",
+                      "is_safe": true/false,
+                      "safety_status": "SAFE & VERIFIED" or "CRITICAL FRAUD / UNSAFE",
+                      "detailed_reasoning": "Paragraph explaining findings",
+                      "suggested_actions": ["action 1", "action 2", "action 3"]
+                    }}
+                    """
+                    resp = model_inst.generate_content([prompt, img])
+                    text = resp.text.strip()
+                    if text.startswith("```"):
+                        text = re.sub(r"^```(?:json)?\n|\n```$", "", text, flags=re.MULTILINE)
+                    return json.loads(text)
             except Exception as e:
-                logger.warning(f"Direct Gemini advisory query exception, using autonomous synthesis: {e}")
+                logger.warning(f"Gemma / Gemini advisory query exception, using autonomous synthesis: {e}")
 
         # Autonomous AI Agent Forensic Reasoning Synthesis
         amount = extracted.get("amount")

@@ -30,27 +30,27 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   return (
     <header 
-      className="h-16 bg-white border-b border-slate-200 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30 select-none shadow-xs"
+      className="h-18 bg-white border-b border-slate-200 px-5 sm:px-8 flex items-center justify-between sticky top-0 z-30 select-none shadow-xs"
       style={{ 
         fontFamily: "'Times New Roman', Times, 'Nimbus Roman No9 L', Georgia, serif",
         letterSpacing: "0.01em"
       }}
     >
       {/* Brand */}
-      <div className="flex items-center space-x-3">
-        <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-white shadow-xs">
-          <ShieldAlert className="w-4 h-4 text-white" />
+      <div className="flex items-center space-x-3.5">
+        <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-white shadow-xs">
+          <ShieldAlert className="w-5 h-5 text-white" />
         </div>
         <div className="flex flex-col">
-          <div className="flex items-center gap-2">
-            <span className="text-base text-slate-900 font-bold tracking-tight leading-none">
+          <div className="flex items-center gap-2.5">
+            <span className="text-xl sm:text-2xl text-slate-900 font-extrabold tracking-tight leading-none">
               AI-Based Fraud Detection in Transactions
             </span>
-            <span className="text-[11px] font-mono text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+            <span className="text-xs font-mono font-semibold text-slate-600 bg-slate-100 px-2.5 py-0.5 rounded-md border border-slate-200">
               Bayes · AO* Graph
             </span>
           </div>
-          <span className="text-[11px] text-slate-500 font-serif leading-tight mt-0.5">
+          <span className="text-xs text-slate-500 font-serif leading-tight mt-1">
             Institutional Receipt Forensics & Probabilistic Risk Engine
           </span>
         </div>

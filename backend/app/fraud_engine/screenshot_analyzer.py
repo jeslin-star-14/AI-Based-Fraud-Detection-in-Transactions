@@ -116,16 +116,16 @@ class ScreenshotFraudAnalyzer:
                     except Exception:
                         pass
 
-        # Standalone decimal amount fallback (e.g. '1,450.00' or '85,000.00'), skipping timestamps
+        # Standalone decimal or comma amount fallback (e.g. '1,450.00' or '225,000' or '25,000')
         if extracted["amount"] is None:
             for token in ocr_tokens:
                 txt = token["text"].strip()
                 if re.search(r'\b(?:AM|PM|am|pm|hrs|hours|min|sec)\b', txt, re.IGNORECASE):
                     continue
-                dec_match = re.search(r'\b([\d,]{1,10}\.\d{2})\b', txt)
+                dec_match = re.search(r'\b(?:\d{1,3}(?:,\d{3})+|\d{1,8}\.\d{2})\b', txt)
                 if dec_match:
                     try:
-                        val = float(dec_match.group(1).replace(",", ""))
+                        val = float(dec_match.group(0).replace(",", ""))
                         extracted["amount"] = val
                         amt_box = token["box"]
                         break
@@ -140,7 +140,7 @@ class ScreenshotFraudAnalyzer:
                     amt_box = token["box"]
                     break
 
-        # Extract UTR / Reference ID (UPI UTR is 12 digits, e.g. 329103948192)
+        # Extract UTR / Reference ID / Transaction ID
         # Priority 1: UPI Ref ID / UTR line
         utr_match = re.search(r'(?:UPI\s*Ref(?:erence)?(?:\s*ID|\s*No)?(?:\s*\([A-Za-z0-9]+\))?|UTR(?:\s*No|\s*ID)?|Ref\s*No)[:\s]*([A-Za-z0-9_\-]{6,24})', raw_text, re.IGNORECASE)
         if utr_match:
@@ -151,15 +151,20 @@ class ScreenshotFraudAnalyzer:
             if digits12:
                 extracted["utr"] = digits12.group(0)
             else:
-                # Priority 3: Generic Txn ID
-                txn_match = re.search(r'(?:Txn\s*ID|Transaction\s*ID)[:\s]*([A-Za-z0-9_\-]{8,24})', raw_text, re.IGNORECASE)
-                if txn_match:
-                    extracted["utr"] = txn_match.group(1).strip()
+                # Priority 3: Google Pay CICAg transaction ID
+                cicag_match = re.search(r'\b(CICAg[a-zA-Z0-9_\-]+)\b', raw_text, re.IGNORECASE)
+                if cicag_match:
+                    extracted["utr"] = cicag_match.group(1).strip()
+                else:
+                    # Priority 4: Generic Transaction / Vansoction ID
+                    txn_match = re.search(r'(?:[tT]ransaction|[vV]an[sS]oction|[tT]xn)\s*(?:ID|Id)?[:\s]*([A-Za-z0-9_\-]{8,24})', raw_text, re.IGNORECASE)
+                    if txn_match:
+                        extracted["utr"] = txn_match.group(1).strip()
 
         # Locate UTR bounding box
         if extracted["utr"] is not None:
             for token in ocr_tokens:
-                if str(extracted["utr"]) in token["text"] or "UTR" in token["text"].upper() or "REF" in token["text"].upper():
+                if str(extracted["utr"]).lower() in token["text"].lower() or "UTR" in token["text"].upper() or "REF" in token["text"].upper() or "CICAG" in token["text"].upper():
                     utr_box = token["box"]
                     break
 
@@ -171,9 +176,14 @@ class ScreenshotFraudAnalyzer:
                 if extracted["payee"] in token["text"]:
                     payee_box = token["box"]
                     break
+        elif ocr_tokens and len(ocr_tokens) > 0:
+            # Fallback to recipient header or merchant name
+            first_txt = ocr_tokens[0]["text"].strip()
+            if len(first_txt) > 3 and not any(k in first_txt.lower() for k in ["google", "gpay", "phonepe", "paytm", "upi"]):
+                extracted["payee"] = first_txt
 
-        # Detect payment status keywords
-        if re.search(r'(?:Paid Successfully|Completed|Payment Successful|Success|Transferred)', raw_text, re.IGNORECASE):
+        # Detect payment status keywords (accounting for minor OCR typos like Complotod)
+        if re.search(r'(?:Paid Successfully|Completed|Complotod|Completd|Payment Successful|Success|Transferred)', raw_text, re.IGNORECASE):
             extracted["status"] = "SUCCESS"
         elif re.search(r'(?:Failed|Declined|Unsuccessful)', raw_text, re.IGNORECASE):
             extracted["status"] = "FAILED"
@@ -344,9 +354,20 @@ class ScreenshotFraudAnalyzer:
             }
 
         # 3. Check for Financial Payment / Transaction Documents
-        payment_verbs = ["paid", "payment", "transferred", "debited", "credited", "sent", "successful", "completed", "bill payment", "recharge"]
-        payment_gateways = ["upi", "gpay", "google pay", "phonepe", "paytm", "bhim", "cred", "amazon pay", "imps", "neft", "rtgs", "bank", "hdfc", "sbi", "icici", "axis"]
-        txn_ids = ["utr", "upi ref", "txn id", "transaction id", "order id", "ref no", "payment id"]
+        payment_verbs = [
+            "paid", "payment", "transferred", "transfer", "debited", "credited", "sent", 
+            "successful", "success", "completed", "complotod", "completd", "bill payment", 
+            "recharge", "pay again", "settlement", "settled"
+        ]
+        payment_gateways = [
+            "upi", "wpl", "wpltrnanetion", "gpay", "google pay", "phonepe", "paytm", "bhim", 
+            "cred", "amazon pay", "imps", "neft", "rtgs", "bank", "dank", "indusind", "hdfc", 
+            "sbi", "icici", "axis", "kotak", "canara", "pnb", "baroda", "union bank", "ybl", "okhdfc"
+        ]
+        txn_ids = [
+            "utr", "upi ref", "txn id", "transaction id", "transaction", "vansoction", 
+            "vansoctionid", "order id", "ref no", "payment id", "cicag"
+        ]
         invoice_sigs = ["tax invoice", "invoice no", "bill to", "gstin", "subtotal", "grand total", "receipt voucher"]
 
         has_payment_verb = any(v in text_lower for v in payment_verbs)
@@ -361,13 +382,15 @@ class ScreenshotFraudAnalyzer:
             (has_payment_verb and (has_gateway or has_txn_id)) or
             has_invoice or
             (has_txn_id and (has_gateway or has_extracted_amount)) or
+            (has_gateway and (has_payment_verb or has_extracted_amount or "fom:" in text_lower or "from:" in text_lower)) or
+            ("cicag" in text_lower) or
             ("payment successful" in text_lower or "paid successfully" in text_lower or "transaction successful" in text_lower) or
             (has_currency and ("completed" in text_lower or "success" in text_lower))
         )
 
         if is_transaction:
             provider = "Electronic Payment Receipt / Transfer Voucher"
-            if "google pay" in text_lower or "gpay" in text_lower:
+            if "google pay" in text_lower or "gpay" in text_lower or "cicag" in text_lower:
                 provider = "Google Pay (GPay) UPI Receipt"
             elif "phonepe" in text_lower:
                 provider = "PhonePe UPI Transaction Voucher"
@@ -377,9 +400,11 @@ class ScreenshotFraudAnalyzer:
                 provider = "BHIM UPI Transfer Slip"
             elif "cred" in text_lower:
                 provider = "CRED Payment Receipt"
+            elif "indusind" in text_lower or "sbi" in text_lower or "hdfc" in text_lower or "icici" in text_lower:
+                provider = "Bank UPI Transaction Voucher"
             elif has_invoice:
                 provider = "Commercial Tax Invoice / Billing Statement"
-            elif has_currency and has_extracted_amount:
+            elif has_extracted_amount:
                 provider = "Payment Amount Receipt Voucher"
 
             return {

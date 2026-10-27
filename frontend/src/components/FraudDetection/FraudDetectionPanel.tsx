@@ -336,17 +336,11 @@ export const FraudDetectionPanel: React.FC = () => {
       <div className="bg-white border-b border-slate-200 px-6 py-6 sm:px-8">
         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div>
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-600 inline-block" />
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 font-mono">
-                Financial Crime Risk & Forensic Intelligence / Live Decision Engine
-              </span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
-              Autonomous Transaction Fraud Detection
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+              Transaction Fraud Detection
             </h1>
-            <p className="text-sm text-slate-600 mt-1 max-w-3xl leading-relaxed">
-              100% Autonomous multi-engine intelligence: Computer vision heuristics, Bayesian posterior probability inference, and goal-directed AND-OR (AO*) graph search decomposition.
+            <p className="text-xs text-slate-500 mt-1 max-w-2xl">
+              Inspect payment receipts, vouchers, and transactions for alterations, invalid references, and fraud patterns.
             </p>
           </div>
 
@@ -390,17 +384,14 @@ export const FraudDetectionPanel: React.FC = () => {
           <div className="lg:col-span-5 flex flex-col gap-6">
             {/* Direct Receipt Upload */}
             <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                   <UploadCloud className="w-4 h-4 text-slate-700" />
-                  Direct Receipt Forensics Intake
+                  Upload Receipt or Screenshot
                 </h2>
-                <span className="text-xs font-mono text-slate-500">
-                  EasyOCR + OpenCV
-                </span>
               </div>
-              <p className="text-xs text-slate-500 mb-4 leading-relaxed">
-                Drop any mobile payment screenshot, banking voucher, or document. Text extraction, domain classification, and forensics run automatically. You can also paste directly from clipboard (Ctrl+V / Cmd+V).
+              <p className="text-xs text-slate-500 mb-3">
+                Upload or paste a payment screenshot (Google Pay, PhonePe, Paytm, Bank Transfer).
               </p>
 
               {/* Connection or Upload Error Alert Banner */}
@@ -783,20 +774,20 @@ export const FraudDetectionPanel: React.FC = () => {
               </div>
             )}
 
-            {/* Gemini AI Agent Forensic Advisory & Investigation Dossier */}
+            {/* AI Analysis & Summary */}
             {advisory && (
               <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100 mb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100 mb-4">
                   <div className="flex items-center gap-2.5">
                     <div className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center">
                       <Bot className="w-4 h-4 text-emerald-400" />
                     </div>
                     <div>
-                      <h3 className="text-base font-bold text-slate-900">
-                        Gemini Multimodal Forensic AI Agent Advisory
+                      <h3 className="text-sm font-bold text-slate-900">
+                        AI Transaction Analysis
                       </h3>
-                      <span className="text-[11px] text-slate-500 font-mono">
-                        Autonomous Multimodal Context & Behavioral Reasoning
+                      <span className="text-[11px] text-slate-500">
+                        Document Classification & Verification
                       </span>
                     </div>
                   </div>
@@ -813,7 +804,7 @@ export const FraudDetectionPanel: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div className="bg-slate-50/70 p-3.5 rounded-lg border border-slate-200">
                     <span className="text-[11px] font-mono uppercase font-bold text-slate-500 block mb-1">
-                      1. What is this payment document / screenshot?
+                      Document Type
                     </span>
                     <p className="text-xs text-slate-900 font-medium leading-relaxed">
                       {advisory.what_is_this}
@@ -822,7 +813,7 @@ export const FraudDetectionPanel: React.FC = () => {
 
                   <div className="bg-slate-50/70 p-3.5 rounded-lg border border-slate-200">
                     <span className="text-[11px] font-mono uppercase font-bold text-slate-500 block mb-1">
-                      2. For what was this payment done? (Purpose & Context)
+                      Payment Context / Purpose
                     </span>
                     <p className="text-xs text-slate-900 font-medium leading-relaxed">
                       {advisory.payment_purpose}
@@ -834,7 +825,7 @@ export const FraudDetectionPanel: React.FC = () => {
                 <div className="mb-4 bg-slate-50/50 p-4 rounded-lg border border-slate-200">
                   <span className="text-[11px] font-mono uppercase font-bold text-slate-600 block mb-1.5 flex items-center gap-1.5">
                     <ShieldCheck className="w-3.5 h-3.5 text-slate-600" />
-                    3. Is it safe? (Autonomous AI Forensic Evaluation)
+                    Safety Assessment & Findings
                   </span>
                   <p className="text-xs text-slate-700 leading-relaxed">
                     {advisory.detailed_reasoning}

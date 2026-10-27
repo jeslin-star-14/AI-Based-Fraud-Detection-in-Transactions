@@ -310,7 +310,69 @@ class ScreenshotFraudAnalyzer:
         """
         text_lower = raw_text.lower()
 
-        # 1. Check for Academic / Examination Documents
+        # 1. First priority: Check for Financial Payment / Transaction Documents
+        payment_verbs = [
+            "paid", "payment", "transferred", "transfer", "debited", "credited", "sent", 
+            "successful", "success", "completed", "complotod", "completd", "bill payment", 
+            "recharge", "pay again", "settlement", "settled"
+        ]
+        payment_gateways = [
+            "upi", "wpl", "wpltrnanetion", "gpay", "google pay", "phonepe", "paytm", "bhim", 
+            "cred", "amazon pay", "imps", "neft", "rtgs", "bank", "dank", "indusind", "hdfc", 
+            "sbi", "icici", "axis", "kotak", "canara", "pnb", "baroda", "union bank", "ybl", "okhdfc"
+        ]
+        txn_ids = [
+            "utr", "upi ref", "txn id", "transaction id", "transaction", "vansoction", 
+            "vansoctionid", "order id", "ref no", "payment id", "cicag"
+        ]
+        invoice_sigs = ["tax invoice", "invoice no", "bill to", "gstin", "subtotal", "grand total", "receipt voucher"]
+
+        has_payment_verb = any(v in text_lower for v in payment_verbs)
+        has_gateway = any(g in text_lower for g in payment_gateways)
+        has_txn_id = any(t in text_lower for t in txn_ids)
+        has_invoice = any(i in text_lower for i in invoice_sigs)
+        has_currency = bool(re.search(r'(?:₹|Rs\.?|Rs:?|INR|\$)', raw_text, re.IGNORECASE))
+        has_extracted_amount = bool(extracted and extracted.get("amount") is not None)
+
+        is_transaction = (
+            (has_currency and (has_payment_verb or has_gateway or has_txn_id or has_extracted_amount)) or
+            (has_payment_verb and (has_gateway or has_txn_id)) or
+            has_invoice or
+            (has_txn_id and (has_gateway or has_extracted_amount)) or
+            (has_gateway and (has_payment_verb or has_extracted_amount or "fom:" in text_lower or "from:" in text_lower or "swiggy" in text_lower)) or
+            ("cicag" in text_lower) or
+            ("paid successfully" in text_lower or "payment successful" in text_lower or "transaction successful" in text_lower) or
+            (has_currency and ("completed" in text_lower or "success" in text_lower))
+        )
+
+        if is_transaction:
+            provider = "Electronic Payment Receipt / Transfer Voucher"
+            if "google pay" in text_lower or "gpay" in text_lower or "cicag" in text_lower:
+                provider = "Google Pay (GPay) UPI Receipt"
+            elif "phonepe" in text_lower:
+                provider = "PhonePe UPI Transaction Voucher"
+            elif "paytm" in text_lower:
+                provider = "Paytm Payments Receipt"
+            elif "bhim" in text_lower:
+                provider = "BHIM UPI Transfer Slip"
+            elif "cred" in text_lower:
+                provider = "CRED Payment Receipt"
+            elif "indusind" in text_lower or "sbi" in text_lower or "hdfc" in text_lower or "icici" in text_lower:
+                provider = "Bank UPI Transaction Voucher"
+            elif has_invoice:
+                provider = "Commercial Tax Invoice / Billing Statement"
+            elif has_extracted_amount:
+                provider = "Payment Amount Receipt Voucher"
+
+            return {
+                "is_transaction": True,
+                "category": "FINANCIAL_TRANSACTION",
+                "document_name": provider,
+                "extracted_details": {},
+                "summary": f"Verified as a financial transaction document ({provider}). Executing multi-stage anti-fraud reasoning."
+            }
+
+        # 2. Check for Academic / Examination Documents
         academic_signatures = [
             "hall ticket", "admit card", "nptel", "swayam", "candidate name", "roll no", 
             "examination", "seating number", "scribe required", "date of birth", "pwd status",
@@ -321,7 +383,6 @@ class ScreenshotFraudAnalyzer:
         academic_matches = [sig for sig in academic_signatures if sig in text_lower]
 
         if len(academic_matches) >= 2 or ("hall ticket" in text_lower or "admit card" in text_lower or "nptel" in text_lower):
-            # Extract academic metadata dynamically from OCR
             candidate_match = re.search(r'Candidate\s*Name[:\s]*([A-Za-z\s.]+?)(?=Roll|Seating|Date|DOB|PwD|\n|$)', raw_text, re.IGNORECASE)
             candidate_name = candidate_match.group(1).strip() if candidate_match else None
             
@@ -365,7 +426,7 @@ class ScreenshotFraudAnalyzer:
                 "summary": summary_desc
             }
 
-        # 2. Check for Government / Citizen Identity Documents
+        # 3. Check for Government / Citizen Identity Documents
         id_signatures = [
             "government of india", "income tax department", "permanent account number",
             "unique identification authority", "aadhaar", "passport", "republic of india",
@@ -379,68 +440,6 @@ class ScreenshotFraudAnalyzer:
                 "document_name": "Government Identity Document (ID / Citizen Card)",
                 "extracted_details": {},
                 "summary": "Identified as a government identification document. Fraud reasoning is restricted to financial payment transaction receipts."
-            }
-
-        # 3. Check for Financial Payment / Transaction Documents
-        payment_verbs = [
-            "paid", "payment", "transferred", "transfer", "debited", "credited", "sent", 
-            "successful", "success", "completed", "complotod", "completd", "bill payment", 
-            "recharge", "pay again", "settlement", "settled"
-        ]
-        payment_gateways = [
-            "upi", "wpl", "wpltrnanetion", "gpay", "google pay", "phonepe", "paytm", "bhim", 
-            "cred", "amazon pay", "imps", "neft", "rtgs", "bank", "dank", "indusind", "hdfc", 
-            "sbi", "icici", "axis", "kotak", "canara", "pnb", "baroda", "union bank", "ybl", "okhdfc"
-        ]
-        txn_ids = [
-            "utr", "upi ref", "txn id", "transaction id", "transaction", "vansoction", 
-            "vansoctionid", "order id", "ref no", "payment id", "cicag"
-        ]
-        invoice_sigs = ["tax invoice", "invoice no", "bill to", "gstin", "subtotal", "grand total", "receipt voucher"]
-
-        has_payment_verb = any(v in text_lower for v in payment_verbs)
-        has_gateway = any(g in text_lower for g in payment_gateways)
-        has_txn_id = any(t in text_lower for t in txn_ids)
-        has_invoice = any(i in text_lower for i in invoice_sigs)
-        has_currency = bool(re.search(r'(?:₹|Rs\.?|Rs:?|INR|\$)', raw_text, re.IGNORECASE))
-        has_extracted_amount = bool(extracted and extracted.get("amount") is not None)
-
-        is_transaction = (
-            (has_currency and (has_payment_verb or has_gateway or has_txn_id or has_extracted_amount)) or
-            (has_payment_verb and (has_gateway or has_txn_id)) or
-            has_invoice or
-            (has_txn_id and (has_gateway or has_extracted_amount)) or
-            (has_gateway and (has_payment_verb or has_extracted_amount or "fom:" in text_lower or "from:" in text_lower)) or
-            ("cicag" in text_lower) or
-            ("payment successful" in text_lower or "paid successfully" in text_lower or "transaction successful" in text_lower) or
-            (has_currency and ("completed" in text_lower or "success" in text_lower))
-        )
-
-        if is_transaction:
-            provider = "Electronic Payment Receipt / Transfer Voucher"
-            if "google pay" in text_lower or "gpay" in text_lower or "cicag" in text_lower:
-                provider = "Google Pay (GPay) UPI Receipt"
-            elif "phonepe" in text_lower:
-                provider = "PhonePe UPI Transaction Voucher"
-            elif "paytm" in text_lower:
-                provider = "Paytm Payments Receipt"
-            elif "bhim" in text_lower:
-                provider = "BHIM UPI Transfer Slip"
-            elif "cred" in text_lower:
-                provider = "CRED Payment Receipt"
-            elif "indusind" in text_lower or "sbi" in text_lower or "hdfc" in text_lower or "icici" in text_lower:
-                provider = "Bank UPI Transaction Voucher"
-            elif has_invoice:
-                provider = "Commercial Tax Invoice / Billing Statement"
-            elif has_extracted_amount:
-                provider = "Payment Amount Receipt Voucher"
-
-            return {
-                "is_transaction": True,
-                "category": "FINANCIAL_TRANSACTION",
-                "document_name": provider,
-                "extracted_details": {},
-                "summary": f"Verified as a financial transaction document ({provider}). Executing multi-stage anti-fraud reasoning."
             }
 
         # 4. Fallback: Unrelated Document / Non-Payment Media

@@ -14,7 +14,9 @@ import {
   ArrowRight,
   Loader2,
   Bot,
-  Workflow
+  Workflow,
+  FileText,
+  Info
 } from 'lucide-react';
 
 interface DetectionHistoryItem {
@@ -117,17 +119,23 @@ export const FraudDetectionPanel: React.FC = () => {
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // Shared processor for files uploaded via input, drag-and-drop, or clipboard paste
+  const processImageFile = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload or paste an image file.');
+      return;
+    }
+
+    if (previewUrl && previewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(previewUrl);
+    }
 
     const objectUrl = URL.createObjectURL(file);
     setPreviewUrl(objectUrl);
-
     setIsLoading(true);
+
     const formData = new FormData();
     formData.append('file', file);
-    // 100% Autonomous: No manual flags or presets sent. Backend EasyOCR and OpenCV inspect actual pixels.
 
     try {
       const res = await fetch('/api/fraud/analyze-screenshot', {
@@ -137,45 +145,67 @@ export const FraudDetectionPanel: React.FC = () => {
       const data = await res.json();
       setAnalysisResult(data);
 
-      const detectedAmt = data.extracted_fields?.amount ?? null;
-      const detectedUtr = data.extracted_fields?.utr ?? null;
-      const detectedPayee = data.extracted_fields?.payee ?? null;
+      const isTxn = data.is_transaction_document !== false;
 
-      setExtractedData({
-        amount: detectedAmt,
-        utr: detectedUtr,
-        beneficiary: detectedPayee,
-        status: data.extracted_fields?.status ?? 'DETECTED'
-      });
+      if (!isTxn) {
+        // Non-transaction document identified by classifier
+        setExtractedData({
+          amount: null,
+          utr: null,
+          beneficiary: null,
+          status: 'NON_TRANSACTION'
+        });
+        setAutoEvidenceFlags({
+          flag_visual_tamper: false,
+          flag_invalid_utr: false,
+          flag_amount_anomaly: false,
+          flag_beneficiary_mismatch: false,
+          flag_time_anomaly: false,
+          flag_missing_watermark: false
+        });
+      } else {
+        const detectedAmt = data.extracted_fields?.amount ?? null;
+        const detectedUtr = data.extracted_fields?.utr ?? null;
+        const detectedPayee = data.extracted_fields?.payee ?? null;
 
-      // Dynamically derive evidence flags directly from Bayesian inference steps
-      const steps = data.bayesian_analysis?.steps || [];
-      const stepNames = steps.map((s: any) => (s.evidence_name || '').toLowerCase());
-      const newFlags = {
-        flag_visual_tamper: stepNames.some((name: string) => name.includes('visual') || name.includes('tamper') || name.includes('splicing')),
-        flag_invalid_utr: stepNames.some((name: string) => name.includes('utr') || name.includes('syntax')),
-        flag_amount_anomaly: stepNames.some((name: string) => name.includes('amount') || name.includes('outlier')),
-        flag_beneficiary_mismatch: stepNames.some((name: string) => name.includes('beneficiary') || name.includes('vpa')),
-        flag_time_anomaly: stepNames.some((name: string) => name.includes('time') || name.includes('velocity') || name.includes('nocturnal')),
-        flag_missing_watermark: stepNames.some((name: string) => name.includes('watermark') || name.includes('seal'))
-      };
-      setAutoEvidenceFlags(newFlags);
+        setExtractedData({
+          amount: detectedAmt,
+          utr: detectedUtr,
+          beneficiary: detectedPayee,
+          status: data.extracted_fields?.status ?? 'DETECTED'
+        });
+
+        // Dynamically derive evidence flags directly from Bayesian inference steps
+        const steps = data.bayesian_analysis?.steps || [];
+        const stepNames = steps.map((s: any) => (s.evidence_name || '').toLowerCase());
+        const newFlags = {
+          flag_visual_tamper: stepNames.some((name: string) => name.includes('visual') || name.includes('tamper') || name.includes('splicing')),
+          flag_invalid_utr: stepNames.some((name: string) => name.includes('utr') || name.includes('syntax')),
+          flag_amount_anomaly: stepNames.some((name: string) => name.includes('amount') || name.includes('outlier')),
+          flag_beneficiary_mismatch: stepNames.some((name: string) => name.includes('beneficiary') || name.includes('vpa')),
+          flag_time_anomaly: stepNames.some((name: string) => name.includes('time') || name.includes('velocity') || name.includes('nocturnal')),
+          flag_missing_watermark: stepNames.some((name: string) => name.includes('watermark') || name.includes('seal'))
+        };
+        setAutoEvidenceFlags(newFlags);
+      }
 
       // Append record to audit ledger
       const now = new Date();
       const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const docName = data.document_classification?.document_name || 'Screenshot';
+
       const newHistoryItem: DetectionHistoryItem = {
         id: `AUDIT-${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}-${Math.floor(1000 + Math.random() * 9000)}`,
         timestamp: `Today, ${timeStr}`,
-        title: `Receipt Upload: ${file.name.slice(0, 32)}`,
-        type: 'Autonomous Image Forensics & OCR Scan',
-        amount: detectedAmt,
-        utr: detectedUtr,
-        beneficiary: detectedPayee,
+        title: `${docName}: ${file.name.slice(0, 24)}`,
+        type: isTxn ? 'Financial Transaction Forensics' : 'Document Domain Intake (Non-Financial)',
+        amount: isTxn ? (data.extracted_fields?.amount ?? null) : null,
+        utr: isTxn ? (data.extracted_fields?.utr ?? null) : null,
+        beneficiary: isTxn ? (data.extracted_fields?.payee ?? null) : null,
         fraudProbability: data.verdict?.fraud_probability ?? 0,
-        riskLevel: data.verdict?.risk_level ?? 'UNSPECIFIED',
+        riskLevel: data.verdict?.risk_level ?? 'NON_TRANSACTION',
         isFraud: !!data.verdict?.is_fraud,
-        detectedFlagsCount: steps.length,
+        detectedFlagsCount: isTxn ? (data.bayesian_analysis?.steps?.length || 0) : 0,
         fullData: data
       };
       setDetectionHistory(prev => [newHistoryItem, ...prev]);
@@ -184,6 +214,46 @@ export const FraudDetectionPanel: React.FC = () => {
       console.error('Screenshot forensic analysis failed:', err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Clipboard Paste Support: Allows user to press Ctrl+V / Cmd+V to paste screenshot from clipboard
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.startsWith('image/')) {
+          const file = items[i].getAsFile();
+          if (file) {
+            processImageFile(file);
+            break;
+          }
+        }
+      }
+    };
+    window.addEventListener('paste', handlePaste);
+    return () => {
+      window.removeEventListener('paste', handlePaste);
+    };
+  }, []);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      processImageFile(file);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      processImageFile(file);
     }
   };
 
@@ -307,25 +377,29 @@ export const FraudDetectionPanel: React.FC = () => {
                 </span>
               </div>
               <p className="text-xs text-slate-500 mb-4 leading-relaxed">
-                Drop any mobile payment screenshot, banking confirmation, or receipt image. Text extraction, UTR checksum validation, and Error Level Analysis (ELA) run automatically.
+                Drop any mobile payment screenshot, banking voucher, or document. Text extraction, domain classification, and forensics run automatically. You can also paste directly from clipboard (Ctrl+V / Cmd+V).
               </p>
 
-              <label className="border border-dashed border-slate-300 hover:border-slate-600 bg-slate-50/60 hover:bg-slate-100/50 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all relative">
+              <label 
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                className="border border-dashed border-slate-300 hover:border-slate-600 bg-slate-50/60 hover:bg-slate-100/50 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all relative"
+              >
                 {isLoading ? (
                   <div className="flex flex-col items-center py-2">
                     <Loader2 className="w-6 h-6 text-slate-700 animate-spin mb-2" />
                     <span className="text-xs font-bold text-slate-800 font-mono">
-                      Processing EasyOCR & Optical Forensic Verification...
+                      Processing EasyOCR & Domain Forensic Verification...
                     </span>
                   </div>
                 ) : (
                   <>
                     <UploadCloud className="w-6 h-6 text-slate-500 mb-2" />
-                    <span className="text-sm font-bold text-slate-800">
-                      Select or Drop Transaction Screenshot
+                    <span className="text-sm font-bold text-slate-800 text-center">
+                      Select, Drop Image, or Press Ctrl+V / Cmd+V to Paste
                     </span>
-                    <span className="text-xs text-slate-500 mt-0.5">
-                      PNG, JPG, WebP supported
+                    <span className="text-xs text-slate-500 mt-1 text-center font-mono">
+                      Supports Clipboard Paste, PNG, JPG, WebP
                     </span>
                   </>
                 )}
@@ -405,187 +479,263 @@ export const FraudDetectionPanel: React.FC = () => {
               )}
             </div>
 
-            {/* Extracted Transaction Parameters */}
-            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                  <FileCheck2 className="w-4 h-4 text-slate-700" />
-                  Extracted Transaction Parameters
-                </h2>
-                <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 font-mono">
-                  {extractedData.status || 'Active'}
-                </span>
-              </div>
-
-              <div className="space-y-3 mb-6">
-                <div className="p-3.5 rounded-lg bg-slate-50/70 border border-slate-200 flex items-center justify-between">
-                  <div>
-                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block font-mono">
-                      Transaction Amount
-                    </span>
-                    <span className="text-lg font-bold text-slate-900 font-mono">
-                      {extractedData.amount !== null ? `₹${extractedData.amount.toLocaleString('en-IN')}` : '— (Not extracted)'}
-                    </span>
-                  </div>
-                  {extractedData.amount !== null && (
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded font-mono ${
-                      extractedData.amount >= 25000 
-                        ? 'bg-amber-50 text-amber-900 border border-amber-200' 
-                        : 'bg-emerald-50 text-emerald-900 border border-emerald-200'
-                    }`}>
-                      {extractedData.amount >= 25000 ? 'High Value' : 'Standard Baseline'}
-                    </span>
-                  )}
-                </div>
-
-                <div className="p-3.5 rounded-lg bg-slate-50/70 border border-slate-200 flex items-center justify-between">
-                  <div>
-                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block font-mono">
-                      UTR / Reference Identifier
-                    </span>
-                    <span className="text-sm font-bold text-slate-900 font-mono">
-                      {extractedData.utr || '— (Not detected)'}
-                    </span>
-                  </div>
-                  {extractedData.utr && (
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded font-mono ${
-                      String(extractedData.utr).length !== 12 
-                        ? 'bg-rose-50 text-rose-900 border border-rose-200' 
-                        : 'bg-emerald-50 text-emerald-900 border border-emerald-200'
-                    }`}>
-                      {String(extractedData.utr).length !== 12 ? 'Non-standard Length' : '12-Digit Format'}
-                    </span>
-                  )}
-                </div>
-
-                <div className="p-3.5 rounded-lg bg-slate-50/70 border border-slate-200 flex items-center justify-between">
-                  <div>
-                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block font-mono">
-                      Beneficiary / Counterparty VPA
-                    </span>
-                    <span className="text-xs font-bold text-slate-900 font-mono truncate max-w-[200px] block">
-                      {extractedData.beneficiary || '—'}
-                    </span>
-                  </div>
-                  <span className="text-xs text-slate-500 font-mono">
-                    Routing Verified
+            {/* Left Column: Document Classification OR Extracted Parameters */}
+            {analysisResult && analysisResult.is_transaction_document === false ? (
+              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-slate-700" />
+                    Document Intent & Domain Analysis
+                  </h2>
+                  <span className="text-xs font-bold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded border border-amber-200 font-mono">
+                    NON-TRANSACTION
                   </span>
                 </div>
-              </div>
 
-              {/* Automated Forensic Risk Indicators */}
-              <div className="pt-4 border-t border-slate-200">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-3 font-mono">
-                  Automated Evidence Indicators:
-                </span>
-                <div className="space-y-2">
-                  {[
-                    { key: 'flag_visual_tamper', label: 'Pixel Discontinuity / Font Alteration', desc: 'Splicing or gradient artifact detected around transaction text.' },
-                    { key: 'flag_invalid_utr', label: 'Invalid Reference ID Syntax', desc: 'UTR violates the standard 12-digit numeric specification.' },
-                    { key: 'flag_amount_anomaly', label: 'Statistical Amount Outlier (>3.5σ)', desc: 'Transaction magnitude exceeds baseline retail dispersion.' },
-                    { key: 'flag_beneficiary_mismatch', label: 'Unverified Counterparty Account', desc: 'Recipient identifier not registered in verified whitelist.' },
-                    { key: 'flag_time_anomaly', label: 'Nocturnal Velocity Burst', desc: 'High-frequency transaction executed outside regular operating window.' },
-                    { key: 'flag_missing_watermark', label: 'Missing Security Seals / Watermarks', desc: 'Expected issuer or NPCI security attributes absent.' },
-                  ].map(({ key, label, desc }) => {
-                    const isFlagged = autoEvidenceFlags[key];
-                    return (
-                      <div
-                        key={key}
-                        className={`p-2.5 rounded-lg border transition-all flex items-start justify-between gap-3 ${
-                          isFlagged
-                            ? 'bg-rose-50/60 border-rose-200 text-rose-950'
-                            : 'bg-slate-50/40 border-slate-200 text-slate-700'
-                        }`}
-                      >
-                        <div className="flex items-start gap-2">
-                          {isFlagged ? (
-                            <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0 mt-0.5" />
-                          ) : (
-                            <CheckCircle2 className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
-                          )}
-                          <div>
-                            <span className="text-xs font-bold block">
-                              {label}
-                            </span>
-                            <span className="text-[11px] text-slate-500 leading-tight block mt-0.5">
-                              {desc}
-                            </span>
-                          </div>
-                        </div>
-                        <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded shrink-0 uppercase tracking-wider font-mono ${
-                          isFlagged ? 'bg-rose-100 text-rose-800' : 'bg-slate-200/80 text-slate-600'
-                        }`}>
-                          {isFlagged ? 'PRESENT' : 'CLEAR'}
-                        </span>
+                <div className="p-4 rounded-xl bg-amber-50/50 border border-amber-200/80 mb-5">
+                  <span className="text-xs font-bold text-amber-900 block mb-1">
+                    {analysisResult.document_classification?.document_name || 'Academic / Unrelated Document'}
+                  </span>
+                  <p className="text-xs text-amber-800/90 leading-relaxed">
+                    {analysisResult.document_classification?.summary || 'Identified as a non-transaction document.'}
+                  </p>
+                </div>
+
+                {analysisResult.document_classification?.extracted_details && Object.keys(analysisResult.document_classification.extracted_details).length > 0 && (
+                  <div className="space-y-2.5 mb-5">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block font-mono">
+                      Identified Document Metadata:
+                    </span>
+                    {Object.entries(analysisResult.document_classification.extracted_details).map(([k, v]: [string, any]) => (
+                      <div key={k} className="p-3 rounded-lg bg-slate-50/80 border border-slate-200 flex items-center justify-between gap-3">
+                        <span className="text-xs font-bold text-slate-600 font-mono">{k}</span>
+                        <span className="text-xs font-bold text-slate-900 text-right truncate max-w-[240px] font-mono">{String(v)}</span>
                       </div>
-                    );
-                  })}
+                    ))}
+                  </div>
+                )}
+
+                <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 flex items-start gap-2.5">
+                  <Info className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    <strong>Domain Verification Notice:</strong> The AI classifier determined this document is an educational or non-financial record. AO* Search and Bayes' Theorem strictly evaluate payment vouchers (UPI receipts, bank transfers, invoices). Upload a transaction receipt to execute fraud detection.
+                  </p>
                 </div>
               </div>
-            </div>
+            ) : (
+              /* Extracted Transaction Parameters */
+              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <FileCheck2 className="w-4 h-4 text-slate-700" />
+                    Extracted Transaction Parameters
+                  </h2>
+                  <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 font-mono">
+                    {extractedData.status || 'Active'}
+                  </span>
+                </div>
+
+                <div className="space-y-3 mb-6">
+                  <div className="p-3.5 rounded-lg bg-slate-50/70 border border-slate-200 flex items-center justify-between">
+                    <div>
+                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block font-mono">
+                        Transaction Amount
+                      </span>
+                      <span className="text-lg font-bold text-slate-900 font-mono">
+                        {extractedData.amount !== null ? `₹${extractedData.amount.toLocaleString('en-IN')}` : '— (Not extracted)'}
+                      </span>
+                    </div>
+                    {extractedData.amount !== null && (
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded font-mono ${
+                        extractedData.amount >= 25000 
+                          ? 'bg-amber-50 text-amber-900 border border-amber-200' 
+                          : 'bg-emerald-50 text-emerald-900 border border-emerald-200'
+                      }`}>
+                        {extractedData.amount >= 25000 ? 'High Value' : 'Standard Baseline'}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="p-3.5 rounded-lg bg-slate-50/70 border border-slate-200 flex items-center justify-between">
+                    <div>
+                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block font-mono">
+                        UTR / Reference Identifier
+                      </span>
+                      <span className="text-sm font-bold text-slate-900 font-mono">
+                        {extractedData.utr || '— (Not detected)'}
+                      </span>
+                    </div>
+                    {extractedData.utr && (
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded font-mono ${
+                        String(extractedData.utr).length !== 12 
+                          ? 'bg-rose-50 text-rose-900 border border-rose-200' 
+                          : 'bg-emerald-50 text-emerald-900 border border-emerald-200'
+                      }`}>
+                        {String(extractedData.utr).length !== 12 ? 'Non-standard Length' : '12-Digit Format'}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="p-3.5 rounded-lg bg-slate-50/70 border border-slate-200 flex items-center justify-between">
+                    <div>
+                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block font-mono">
+                        Beneficiary / Counterparty VPA
+                      </span>
+                      <span className="text-xs font-bold text-slate-900 font-mono truncate max-w-[200px] block">
+                        {extractedData.beneficiary || '—'}
+                      </span>
+                    </div>
+                    <span className="text-xs text-slate-500 font-mono">
+                      Routing Verified
+                    </span>
+                  </div>
+                </div>
+
+                {/* Automated Forensic Risk Indicators */}
+                <div className="pt-4 border-t border-slate-200">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-3 font-mono">
+                    Automated Evidence Indicators:
+                  </span>
+                  <div className="space-y-2">
+                    {[
+                      { key: 'flag_visual_tamper', label: 'Pixel Discontinuity / Font Alteration', desc: 'Splicing or gradient artifact detected around transaction text.' },
+                      { key: 'flag_invalid_utr', label: 'Invalid Reference ID Syntax', desc: 'UTR violates the standard 12-digit numeric specification.' },
+                      { key: 'flag_amount_anomaly', label: 'Statistical Amount Outlier (>3.5σ)', desc: 'Transaction magnitude exceeds baseline retail dispersion.' },
+                      { key: 'flag_beneficiary_mismatch', label: 'Unverified Counterparty Account', desc: 'Recipient identifier not registered in verified whitelist.' },
+                      { key: 'flag_time_anomaly', label: 'Nocturnal Velocity Burst', desc: 'High-frequency transaction executed outside regular operating window.' },
+                      { key: 'flag_missing_watermark', label: 'Missing Security Seals / Watermarks', desc: 'Expected issuer or NPCI security attributes absent.' },
+                    ].map(({ key, label, desc }) => {
+                      const isFlagged = autoEvidenceFlags[key];
+                      return (
+                        <div
+                          key={key}
+                          className={`p-2.5 rounded-lg border transition-all flex items-start justify-between gap-3 ${
+                            isFlagged
+                              ? 'bg-rose-50/60 border-rose-200 text-rose-950'
+                              : 'bg-slate-50/40 border-slate-200 text-slate-700'
+                          }`}
+                        >
+                          <div className="flex items-start gap-2">
+                            {isFlagged ? (
+                              <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0 mt-0.5" />
+                            ) : (
+                              <CheckCircle2 className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                            )}
+                            <div>
+                              <span className="text-xs font-bold block">
+                                {label}
+                              </span>
+                              <span className="text-[11px] text-slate-500 leading-tight block mt-0.5">
+                                {desc}
+                              </span>
+                            </div>
+                          </div>
+                          <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded shrink-0 uppercase tracking-wider font-mono ${
+                            isFlagged ? 'bg-rose-100 text-rose-800' : 'bg-slate-200/80 text-slate-600'
+                          }`}>
+                            {isFlagged ? 'PRESENT' : 'CLEAR'}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Right Column: Verdict, Gemini Advisory, Bayes Calculus, and AO* Flowchart (7 cols) */}
           <div className="lg:col-span-7 flex flex-col gap-6">
             {/* Risk Verdict Banner */}
-            <div className={`rounded-xl p-6 border shadow-xs transition-all ${
-              verdict?.is_fraud
-                ? 'bg-rose-50/40 border-rose-300'
-                : 'bg-emerald-50/30 border-emerald-300'
-            }`}>
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-5">
-                <div>
-                  <span className={`px-2.5 py-0.5 rounded text-[11px] font-bold tracking-wider uppercase inline-flex items-center gap-1.5 mb-2 font-mono ${
-                    verdict?.is_fraud 
-                      ? 'bg-rose-700 text-white' 
-                      : 'bg-emerald-800 text-white'
-                  }`}>
-                    {verdict?.is_fraud ? (
-                      <ShieldAlert className="w-3.5 h-3.5 text-white" />
-                    ) : (
-                      <CheckCircle2 className="w-3.5 h-3.5 text-white" />
-                    )}
-                    <span>{verdict?.risk_level || 'EVALUATING'}</span>
-                  </span>
-                  <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight leading-snug">
-                    {verdict?.title || 'Awaiting Receipt Upload...'}
-                  </h3>
-                  <p className="text-xs text-slate-700 mt-2 max-w-xl leading-relaxed">
-                    {verdict?.recommendation || 'Upload an image or receipt to initiate the autonomous Bayesian inference and AO* search decomposition.'}
-                  </p>
-                </div>
-
-                {/* Posterior Probability Card */}
-                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs sm:text-right shrink-0">
-                  <span className="text-[11px] text-slate-500 block font-bold uppercase tracking-wider font-mono">
-                    Posterior Fraud Probability
-                  </span>
-                  <div className="text-4xl font-extrabold tracking-tight text-slate-900 flex items-baseline sm:justify-end gap-1 mt-1 font-mono">
-                    <span className={verdict?.is_fraud ? 'text-rose-700' : 'text-emerald-700'}>
-                      {verdict ? (verdict.fraud_probability * 100).toFixed(1) : '0.0'}
+            {analysisResult && analysisResult.is_transaction_document === false ? (
+              <div className="rounded-xl p-6 border shadow-xs transition-all bg-amber-50/40 border-amber-300">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-5">
+                  <div>
+                    <span className="px-2.5 py-0.5 rounded text-[11px] font-bold tracking-wider uppercase inline-flex items-center gap-1.5 mb-2 font-mono bg-amber-700 text-white">
+                      <Info className="w-3.5 h-3.5 text-white" />
+                      <span>NON-TRANSACTION DOCUMENT</span>
                     </span>
-                    <span className="text-base font-bold text-slate-400">%</span>
+                    <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight leading-snug">
+                      {verdict?.title || 'NON-TRANSACTION DOCUMENT DETECTED'}
+                    </h3>
+                    <p className="text-xs text-slate-700 mt-2 max-w-xl leading-relaxed">
+                      {verdict?.recommendation || 'Document is not a monetary transaction receipt. Upload a financial payment receipt to evaluate fraud.'}
+                    </p>
                   </div>
-                  <span className="text-[11px] text-slate-500 font-mono block mt-1">
-                    Prior Base Rate: {(bayes?.prior_probability * 100 || 2.5).toFixed(1)}%
-                  </span>
+
+                  <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs sm:text-right shrink-0">
+                    <span className="text-[11px] text-slate-500 block font-bold uppercase tracking-wider font-mono">
+                      Fraud Calculus Status
+                    </span>
+                    <div className="text-2xl font-extrabold tracking-tight text-slate-700 mt-1 font-mono">
+                      INACTIVE
+                    </div>
+                    <span className="text-[11px] text-amber-700 font-mono block mt-1 font-bold">
+                      Non-Payment Document
+                    </span>
+                  </div>
                 </div>
               </div>
+            ) : (
+              <div className={`rounded-xl p-6 border shadow-xs transition-all ${
+                verdict?.is_fraud
+                  ? 'bg-rose-50/40 border-rose-300'
+                  : 'bg-emerald-50/30 border-emerald-300'
+              }`}>
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-5">
+                  <div>
+                    <span className={`px-2.5 py-0.5 rounded text-[11px] font-bold tracking-wider uppercase inline-flex items-center gap-1.5 mb-2 font-mono ${
+                      verdict?.is_fraud 
+                        ? 'bg-rose-700 text-white' 
+                        : 'bg-emerald-800 text-white'
+                    }`}>
+                      {verdict?.is_fraud ? (
+                        <ShieldAlert className="w-3.5 h-3.5 text-white" />
+                      ) : (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                      )}
+                      <span>{verdict?.risk_level || 'EVALUATING'}</span>
+                    </span>
+                    <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight leading-snug">
+                      {verdict?.title || 'Awaiting Receipt Upload...'}
+                    </h3>
+                    <p className="text-xs text-slate-700 mt-2 max-w-xl leading-relaxed">
+                      {verdict?.recommendation || 'Upload an image or receipt to initiate the autonomous Bayesian inference and AO* search decomposition.'}
+                    </p>
+                  </div>
 
-              {/* Linear Risk Meter */}
-              <div className="w-full bg-slate-200 rounded-full h-2 mt-5 overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all duration-500 ${
-                    (verdict?.fraud_probability || 0) >= 0.70
-                      ? 'bg-rose-700'
-                      : (verdict?.fraud_probability || 0) >= 0.35
-                      ? 'bg-amber-600'
-                      : 'bg-emerald-700'
-                  }`}
-                  style={{ width: `${Math.min(100, Math.max(2, (verdict?.fraud_probability || 0) * 100))}%` }}
-                />
+                  {/* Posterior Probability Card */}
+                  <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs sm:text-right shrink-0">
+                    <span className="text-[11px] text-slate-500 block font-bold uppercase tracking-wider font-mono">
+                      Posterior Fraud Probability
+                    </span>
+                    <div className="text-4xl font-extrabold tracking-tight text-slate-900 flex items-baseline sm:justify-end gap-1 mt-1 font-mono">
+                      <span className={verdict?.is_fraud ? 'text-rose-700' : 'text-emerald-700'}>
+                        {verdict ? (verdict.fraud_probability * 100).toFixed(1) : '0.0'}
+                      </span>
+                      <span className="text-base font-bold text-slate-400">%</span>
+                    </div>
+                    <span className="text-[11px] text-slate-500 font-mono block mt-1">
+                      Prior Base Rate: {(bayes?.prior_probability * 100 || 2.5).toFixed(1)}%
+                    </span>
+                  </div>
+                </div>
+
+                {/* Linear Risk Meter */}
+                <div className="w-full bg-slate-200 rounded-full h-2 mt-5 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      (verdict?.fraud_probability || 0) >= 0.70
+                        ? 'bg-rose-700'
+                        : (verdict?.fraud_probability || 0) >= 0.35
+                        ? 'bg-amber-600'
+                        : 'bg-emerald-700'
+                    }`}
+                    style={{ width: `${Math.min(100, Math.max(2, (verdict?.fraud_probability || 0) * 100))}%` }}
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Gemini AI Agent Forensic Advisory & Investigation Dossier */}
             {advisory && (
@@ -683,43 +833,55 @@ export const FraudDetectionPanel: React.FC = () => {
                 </span>
               </div>
 
-              <p className="text-xs text-slate-600 leading-relaxed mb-4 bg-slate-50/70 p-3 rounded-lg border border-slate-200">
-                {bayes?.explanation || "Bayes' Theorem models fraud belief as a probability distribution. Starting from baseline prior odds, every observed token multiplies the odds by its likelihood ratio to produce the exact posterior risk."}
-              </p>
+              {bayes && bayes.is_applicable === false ? (
+                <div className="p-6 bg-slate-50/70 rounded-xl border border-slate-200 text-center">
+                  <Binary className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                  <h4 className="text-sm font-bold text-slate-800">Bayesian Inference Calculus Inactive</h4>
+                  <p className="text-xs text-slate-500 max-w-md mx-auto mt-1 leading-relaxed">
+                    {bayes?.explanation || "Bayes' Theorem calculation is restricted to financial transactions. No payment transaction detected in this document."}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <p className="text-xs text-slate-600 leading-relaxed mb-4 bg-slate-50/70 p-3 rounded-lg border border-slate-200">
+                    {bayes?.explanation || "Bayes' Theorem models fraud belief as a probability distribution. Starting from baseline prior odds, every observed token multiplies the odds by its likelihood ratio to produce the exact posterior risk."}
+                  </p>
 
-              <div className="overflow-x-auto rounded-lg border border-slate-200">
-                <table className="w-full text-left text-xs border-collapse font-serif">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold">
-                      <th className="py-2.5 px-3 font-mono">Step</th>
-                      <th className="py-2.5 px-3">Observed Evidence Token</th>
-                      <th className="py-2.5 px-3 text-right font-mono">Prior P(F)</th>
-                      <th className="py-2.5 px-3 text-right font-mono">Bayes Factor (LR)</th>
-                      <th className="py-2.5 px-3 text-right font-mono">Posterior P(F|E)</th>
-                      <th className="py-2.5 px-3 text-right font-mono">Δ Shift</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {bayes?.steps?.map((st: any) => (
-                      <tr key={st.step_num} className="hover:bg-slate-50/60 transition-colors">
-                        <td className="py-2.5 px-3 font-mono text-slate-500">#{st.step_num}</td>
-                        <td className="py-2.5 px-3 text-slate-900 font-bold">{st.evidence_name}</td>
-                        <td className="py-2.5 px-3 text-right font-mono text-slate-600">{(st.prior_prob * 100).toFixed(1)}%</td>
-                        <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900">{st.bayes_factor}x</td>
-                        <td className="py-2.5 px-3 text-right font-mono font-bold text-rose-700">{(st.posterior_prob * 100).toFixed(1)}%</td>
-                        <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-800">+{st.delta_pct}%</td>
-                      </tr>
-                    ))}
-                    {(!bayes?.steps || bayes.steps.length === 0) && (
-                      <tr>
-                        <td colSpan={6} className="py-6 text-center text-slate-400 font-mono">
-                          Zero adverse evidence tokens observed. Baseline prior probability holds legitimate.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                  <div className="overflow-x-auto rounded-lg border border-slate-200">
+                    <table className="w-full text-left text-xs border-collapse font-serif">
+                      <thead>
+                        <tr className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold">
+                          <th className="py-2.5 px-3 font-mono">Step</th>
+                          <th className="py-2.5 px-3">Observed Evidence Token</th>
+                          <th className="py-2.5 px-3 text-right font-mono">Prior P(F)</th>
+                          <th className="py-2.5 px-3 text-right font-mono">Bayes Factor (LR)</th>
+                          <th className="py-2.5 px-3 text-right font-mono">Posterior P(F|E)</th>
+                          <th className="py-2.5 px-3 text-right font-mono">Δ Shift</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {bayes?.steps?.map((st: any) => (
+                          <tr key={st.step_num} className="hover:bg-slate-50/60 transition-colors">
+                            <td className="py-2.5 px-3 font-mono text-slate-500">#{st.step_num}</td>
+                            <td className="py-2.5 px-3 text-slate-900 font-bold">{st.evidence_name}</td>
+                            <td className="py-2.5 px-3 text-right font-mono text-slate-600">{(st.prior_prob * 100).toFixed(1)}%</td>
+                            <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900">{st.bayes_factor}x</td>
+                            <td className="py-2.5 px-3 text-right font-mono font-bold text-rose-700">{(st.posterior_prob * 100).toFixed(1)}%</td>
+                            <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-800">+{st.delta_pct}%</td>
+                          </tr>
+                        ))}
+                        {(!bayes?.steps || bayes.steps.length === 0) && (
+                          <tr>
+                            <td colSpan={6} className="py-6 text-center text-slate-400 font-mono">
+                              Zero adverse evidence tokens observed. Baseline prior probability holds legitimate.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* AO* (AND-OR Graph) Search Decomposition & Visual Flowchart */}
@@ -767,8 +929,18 @@ export const FraudDetectionPanel: React.FC = () => {
                 </div>
               </div>
 
-              <p className="text-xs text-slate-600 mb-4 leading-relaxed bg-slate-50/70 p-3 rounded-lg border border-slate-200">
-                Unlike Bayesian probability, <strong>AO* is a heuristic state-space search algorithm</strong>. It decomposes the fraud confirmation hypothesis into disjunctive alternative vectors (OR nodes) and conjunctive requirement sets (AND nodes), iteratively updating costs bottom-up ($f(n) = g(n) + h(n)$) to derive the minimal-cost proof path.
+              {aoStar && aoStar.is_applicable === false ? (
+                <div className="p-6 bg-slate-50/70 rounded-xl border border-slate-200 text-center">
+                  <Workflow className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                  <h4 className="text-sm font-bold text-slate-800">AO* Search Inactive (Non-Transaction Document)</h4>
+                  <p className="text-xs text-slate-500 max-w-md mx-auto mt-1 leading-relaxed">
+                    {aoStar?.explanation || "AO* AND-OR Graph Search proves fraud paths only for payment transactions. Since no transaction was detected, the fraud proof tree is inactive."}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <p className="text-xs text-slate-600 mb-4 leading-relaxed bg-slate-50/70 p-3 rounded-lg border border-slate-200">
+                    Unlike Bayesian probability, <strong>AO* is a heuristic state-space search algorithm</strong>. It decomposes the fraud confirmation hypothesis into disjunctive alternative vectors (OR nodes) and conjunctive requirement sets (AND nodes), iteratively updating costs bottom-up ($f(n) = g(n) + h(n)$) to derive the minimal-cost proof path.
               </p>
 
               {/* AO* Interactive Visual Flowchart */}
@@ -1058,7 +1230,9 @@ export const FraudDetectionPanel: React.FC = () => {
                   )}
                 </div>
               </div>
-            </div>
+            </>
+          )}
+        </div>
           </div>
         </div>
       ) : (

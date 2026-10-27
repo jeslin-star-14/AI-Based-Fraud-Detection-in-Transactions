@@ -131,7 +131,10 @@ class AOStarSearcher:
                 is_solved=has_tamper,
                 is_fraud_flagged=has_tamper,
                 evidence_payload=detected_evidence_map.get("visual_tampering"),
-                status_message="Altered font/pixels detected (FakePay signature)" if has_tamper else "Fonts authentic"
+                status_message=(
+                    detected_evidence_map.get("visual_tampering", {}).get("details") 
+                    or "Altered font/pixels detected (FakePay signature)"
+                ) if has_tamper else "Font spacing and Laplacian variance authentic"
             ),
 
             # Leaf 2: Missing Watermark Elements
@@ -144,7 +147,10 @@ class AOStarSearcher:
                 is_solved=has_watermark_missing,
                 is_fraud_flagged=has_watermark_missing,
                 evidence_payload=detected_evidence_map.get("missing_watermark_elements"),
-                status_message="Security badges missing/altered" if has_watermark_missing else "Official badges present"
+                status_message=(
+                    detected_evidence_map.get("missing_watermark_elements", {}).get("details")
+                    or "Security badges missing or altered"
+                ) if has_watermark_missing else "Official NPCI & bank security seal present"
             ),
 
             # Leaf 3: Invalid UTR
@@ -157,7 +163,10 @@ class AOStarSearcher:
                 is_solved=has_utr_invalid,
                 is_fraud_flagged=has_utr_invalid,
                 evidence_payload=detected_evidence_map.get("utr_invalid_syntax"),
-                status_message="Invalid 12-digit UTR checksum" if has_utr_invalid else "Valid UTR syntax"
+                status_message=(
+                    detected_evidence_map.get("utr_invalid_syntax", {}).get("details")
+                    or "Invalid 12-digit UTR checksum"
+                ) if has_utr_invalid else "12-digit UTR numeric checksum verified"
             ),
 
             # Leaf 4: Beneficiary Mismatch
@@ -170,7 +179,10 @@ class AOStarSearcher:
                 is_solved=has_beneficiary_bad,
                 is_fraud_flagged=has_beneficiary_bad,
                 evidence_payload=detected_evidence_map.get("beneficiary_mismatch"),
-                status_message="VPA unverified or mismatched" if has_beneficiary_bad else "Beneficiary verified"
+                status_message=(
+                    detected_evidence_map.get("beneficiary_mismatch", {}).get("details")
+                    or "VPA unverified or mismatched"
+                ) if has_beneficiary_bad else "Beneficiary VPA verified in merchant registry"
             ),
 
             # Leaf 5: Amount Outlier
@@ -183,7 +195,10 @@ class AOStarSearcher:
                 is_solved=has_amount_bad,
                 is_fraud_flagged=has_amount_bad,
                 evidence_payload=detected_evidence_map.get("amount_anomaly"),
-                status_message="Amount >3 sigma above threshold" if has_amount_bad else "Amount within normal range"
+                status_message=(
+                    detected_evidence_map.get("amount_anomaly", {}).get("details")
+                    or "Amount deviates from standard retail baseline"
+                ) if has_amount_bad else "Amount conforms to baseline retail spending profile"
             ),
 
             # Leaf 6: Timestamp Velocity
@@ -196,7 +211,10 @@ class AOStarSearcher:
                 is_solved=has_time_bad,
                 is_fraud_flagged=has_time_bad,
                 evidence_payload=detected_evidence_map.get("time_velocity_anomaly"),
-                status_message="Suspicious high-velocity nocturnal burst" if has_time_bad else "Normal timestamp window"
+                status_message=(
+                    detected_evidence_map.get("time_velocity_anomaly", {}).get("details")
+                    or "Suspicious high-velocity nocturnal burst"
+                ) if has_time_bad else "Normal transaction velocity and time window"
             ),
 
             # Direct Leaf: Duplicate Receipt Hash
@@ -209,7 +227,10 @@ class AOStarSearcher:
                 is_solved=has_dup_hash,
                 is_fraud_flagged=has_dup_hash,
                 evidence_payload=detected_evidence_map.get("duplicate_receipt_hash"),
-                status_message="Matches known fake receipt template" if has_dup_hash else "Unique receipt hash"
+                status_message=(
+                    detected_evidence_map.get("duplicate_receipt_hash", {}).get("details")
+                    or "Matches known fake receipt template fingerprint"
+                ) if has_dup_hash else "Unique receipt perceptual hash confirmed"
             )
         }
 

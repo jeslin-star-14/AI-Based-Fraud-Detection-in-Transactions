@@ -24,7 +24,9 @@ import {
   Lightbulb,
   Sparkles,
   Calculator,
-  Eye
+  Eye,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 
 interface DetectionHistoryItem {
@@ -61,6 +63,9 @@ export const FraudDetectionPanel: React.FC<{ roleMode?: RoleMode }> = ({ roleMod
 
   // AO* View Toggle: Flowchart vs Table
   const [aoViewMode, setAoViewMode] = useState<'flowchart' | 'table'>('flowchart');
+
+  // Toggle for collapsible mathematical proof & search details
+  const [showAdvancedCalculus, setShowAdvancedCalculus] = useState<boolean>(false);
 
   // Upload preview state
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -689,49 +694,42 @@ export const FraudDetectionPanel: React.FC<{ roleMode?: RoleMode }> = ({ roleMod
                   </div>
                 </div>
 
-                {/* Automated Forensic Risk Indicators */}
-                <div className="pt-4 border-t border-slate-200">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-3 font-mono">
-                    Automated Evidence Indicators:
+                {/* Verification Checks */}
+                <div className="pt-4 border-t border-slate-100">
+                  <span className="text-xs font-bold text-slate-700 block mb-2.5">
+                    Security Verification Checks:
                   </span>
-                  <div className="space-y-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {[
-                      { key: 'flag_visual_tamper', label: 'Pixel Discontinuity / Font Alteration', desc: 'Splicing or gradient artifact detected around transaction text.' },
-                      { key: 'flag_invalid_utr', label: 'Invalid Reference ID Syntax', desc: 'UTR violates the standard 12-digit numeric specification.' },
-                      { key: 'flag_amount_anomaly', label: 'Statistical Amount Outlier (>3.5σ)', desc: 'Transaction magnitude exceeds baseline retail dispersion.' },
-                      { key: 'flag_beneficiary_mismatch', label: 'Unverified Counterparty Account', desc: 'Recipient identifier not registered in verified whitelist.' },
-                      { key: 'flag_time_anomaly', label: 'Nocturnal Velocity Burst', desc: 'High-frequency transaction executed outside regular operating window.' },
-                      { key: 'flag_missing_watermark', label: 'Missing Security Seals / Watermarks', desc: 'Expected issuer or NPCI security attributes absent.' },
-                    ].map(({ key, label, desc }) => {
+                      { key: 'flag_visual_tamper', label: 'Font & Pixel Authenticity' },
+                      { key: 'flag_invalid_utr', label: 'UTR Reference ID Format' },
+                      { key: 'flag_amount_anomaly', label: 'Amount Baseline Check' },
+                      { key: 'flag_beneficiary_mismatch', label: 'Beneficiary Account Whitelist' },
+                      { key: 'flag_time_anomaly', label: 'Transaction Velocity / Time' },
+                      { key: 'flag_missing_watermark', label: 'NPCI / Bank Security Seal' },
+                    ].map(({ key, label }) => {
                       const isFlagged = autoEvidenceFlags[key];
                       return (
                         <div
                           key={key}
-                          className={`p-2.5 rounded-lg border transition-all flex items-start justify-between gap-3 ${
+                          className={`p-2 rounded-lg border text-xs flex items-center justify-between gap-2 transition-all ${
                             isFlagged
-                              ? 'bg-rose-50/60 border-rose-200 text-rose-950'
-                              : 'bg-slate-50/40 border-slate-200 text-slate-700'
+                              ? 'bg-rose-50 border-rose-200 text-rose-950 font-bold'
+                              : 'bg-slate-50/70 border-slate-200 text-slate-700'
                           }`}
                         >
-                          <div className="flex items-start gap-2">
+                          <div className="flex items-center gap-1.5 truncate">
                             {isFlagged ? (
-                              <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0 mt-0.5" />
+                              <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
                             ) : (
-                              <CheckCircle2 className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                             )}
-                            <div>
-                              <span className="text-xs font-bold block">
-                                {label}
-                              </span>
-                              <span className="text-[11px] text-slate-500 leading-tight block mt-0.5">
-                                {desc}
-                              </span>
-                            </div>
+                            <span className="truncate">{label}</span>
                           </div>
-                          <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded shrink-0 uppercase tracking-wider font-mono ${
-                            isFlagged ? 'bg-rose-100 text-rose-800' : 'bg-slate-200/80 text-slate-600'
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 uppercase font-mono ${
+                            isFlagged ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'
                           }`}>
-                            {isFlagged ? 'PRESENT' : 'CLEAR'}
+                            {isFlagged ? 'FLAGGED' : 'PASSED'}
                           </span>
                         </div>
                       );
@@ -914,18 +912,55 @@ export const FraudDetectionPanel: React.FC<{ roleMode?: RoleMode }> = ({ roleMod
               </div>
             )}
 
-            {/* Bayes' Theorem Mathematical Inference Calculus */}
-            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-                <div>
-                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <Binary className="w-4 h-4 text-slate-700" />
-                    Bayes' Theorem Evidence Calculus
-                  </h3>
-                  <span className="text-[11px] text-slate-500 font-mono">
-                    Probabilistic Multi-Evidence Posterior Updating
-                  </span>
+            {/* Advanced Reasoning (Bayes' Calculus & AO* Graph Search) - Collapsible to avoid information overload */}
+            <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+              <button
+                type="button"
+                onClick={() => setShowAdvancedCalculus(!showAdvancedCalculus)}
+                className="w-full p-4 flex items-center justify-between text-left hover:bg-slate-50 transition-colors"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="p-1.5 bg-slate-100 rounded-lg text-slate-700">
+                    <Binary className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-900 flex items-center gap-2">
+                      <span>Mathematical Inference & Proof Search</span>
+                      <span className="text-[10px] font-mono px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded border border-slate-200">
+                        Bayes' Theorem · AO* Graph
+                      </span>
+                    </h3>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      {showAdvancedCalculus ? 'Click to hide probabilistic calculus and graph tree' : 'Click to view step-by-step Bayes posterior updating & AO* proof tree'}
+                    </p>
+                  </div>
                 </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-600 font-mono">
+                    {showAdvancedCalculus ? 'Hide Details' : 'View Details'}
+                  </span>
+                  {showAdvancedCalculus ? (
+                    <ChevronUp className="w-4 h-4 text-slate-500" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-slate-500" />
+                  )}
+                </div>
+              </button>
+
+              {showAdvancedCalculus && (
+                <div className="p-6 border-t border-slate-100 space-y-6">
+                  {/* Bayes' Theorem Mathematical Inference Calculus */}
+                  <div className="bg-slate-50/50 border border-slate-200 rounded-xl p-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                          <Binary className="w-4 h-4 text-slate-700" />
+                          Bayes' Theorem Evidence Calculus
+                        </h4>
+                        <span className="text-[11px] text-slate-500 font-mono">
+                          Probabilistic Multi-Evidence Posterior Updating
+                        </span>
+                      </div>
                 <span className="text-xs text-slate-700 font-mono bg-slate-100 border border-slate-200 px-2.5 py-1 rounded">
                   P(F | E) = [P(E | F) · P(F)] / P(E)
                 </span>
@@ -1331,9 +1366,12 @@ export const FraudDetectionPanel: React.FC<{ roleMode?: RoleMode }> = ({ roleMod
             </>
           )}
         </div>
-          </div>
-        </div>
-      ) : activeSubTab === 'history' ? (
+      </div>
+    )}
+  </div>
+</div>
+</div>
+) : activeSubTab === 'history' ? (
         /* Detection Audit Ledger (History) View */
         <div className="max-w-7xl mx-auto w-full p-6 sm:p-8 flex-1">
           <div className="bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-xs">

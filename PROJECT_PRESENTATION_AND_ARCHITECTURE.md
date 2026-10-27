@@ -273,6 +273,60 @@ Every node $n$ in the AND-OR graph maintains a cost evaluation $f(n)$:
 
 ---
 
+## 5. The "Subject" Persona: Pedagogical Learning & STEM Explanation
+
+### 5.1 What is the "Subject" Persona in the Header?
+In the application header, the **Persona Selector** provides an adaptive cognitive lens tailored to different stakeholders:
+- **Executive**: High-level summaries, revenue-at-risk, and operational ROI.
+- **Fraud Analyst (Auditor)**: Forensic audit trails, NPCI checksums, and verification ledger logs.
+- **AI Researcher (Data Scientist)**: Loss functions, hyperedge derivations, and matrix embeddings.
+- **Subject (Studies / Pedagogical Learning)**: **Intuitive, plain-language conceptual explanations designed for students, educators, and viva/examiner evaluations.**
+- **Compliance Officer (Legal Counsel)**: SAR regulatory reporting, PMLA guidelines, and legal evidence admissibility.
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│  Persona: [ Subject (STEM Learning & Pedagogical Explanation)  ▼ ]     │
+└────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+       Transforms Technical Formulas into Plain-Language Analogies:
+   • Bayes' Theorem    ──► "The Detective Gathering Compounding Clues"
+   • AO* Graph Search  ──► "The Courtroom Proof Tree with Alternative Channels"
+   • Domain Classifier ──► "The Gatekeeper Sorting Non-Financial Media"
+```
+
+### 5.2 How "Subject" Mode Explains Bayes' Theorem
+When a student or examiner interacts with the system under the **Subject** persona, the AI demystifies the mathematical calculus:
+
+1. **The "Detective Clue" Analogy**:
+   - Imagine a detective walking into a room where only 2.5 out of 100 people are suspects (**Prior Probability: $P(\text{Fraud}) = 2.5\%$**).
+   - The detective finds a suspicious pasted font box around the amount (**Observation 1**). A genuine receipt rarely has pasted fonts ($1.5\%$ chance), while a fake receipt almost always does ($88\%$ chance). This clue multiplies the suspicion by a **Bayes Factor of $58.7\times$**, jumping fraud belief from $2.5\%$ to **$60.1\%$**.
+   - The detective then checks the banking reference number (UTR) and discovers it has letters instead of 12 digits (**Observation 2**). This clue is a decisive **$92\times$ magnifier**.
+   - Combining both clues via Bayes' Theorem, the detective's belief reaches **$99.28\%$**, establishing undeniable proof of fraud.
+
+2. **Why Bayes' Theorem Was Chosen for Transactions**:
+   - Real-world mobile screenshots have compression noise, low resolution, and lighting variations.
+   - Deterministic "if-else" code causes massive false alarms or misses subtle fraud. Bayes' Theorem handles **uncertainty**, allowing multiple weak clues to compound into overwhelming mathematical proof without guessing.
+
+### 5.3 How "Subject" Mode Explains the AO\* Algorithm
+When explaining the **AO\*** search tree in Subject mode:
+
+1. **The "Courtroom Proof" Analogy**:
+   - To convict a suspect of fraud in a courtroom, the prosecutor doesn't need to prove *every possible crime*—they only need to prove **one valid theory of the crime** (**OR Branch**):
+     - *Theory A*: The document was physically altered (Visual Splicing).
+     - *Theory B*: The banking identifier was spoofed (Reference Spoofing).
+     - *Theory C*: The transaction pattern is impossible (Behavioral Anomaly).
+   - However, within *Theory A*, the prosecutor cannot just point to blurry text. They must prove **both required sub-conditions** (**AND Branch**):
+     - Sub-condition 1: Pixel font tampering must be verified.
+     - **AND** Sub-condition 2: Official bank security watermark must be missing.
+   - **AO\* Algorithm** finds the path of least effort (minimum heuristic cost $f(n)$) to verify the required sub-conditions and produce a mathematically sound, complete proof tree.
+
+2. **Why AO\* Was Chosen over A\***:
+   - Traditional **A\*** search only searches single linear routes (e.g., GPS navigation from city A to city B).
+   - Transaction fraud is **non-linear and composite**: it requires solving compounding criteria across alternative attack avenues. Only an **AND-OR graph search (AO\*)** can solve problem-reduction proof trees.
+
+---
+
 # Part 2: Slide-by-Slide Presentation Deck (PPT Blueprint)
 
 ---
@@ -407,7 +461,26 @@ Every node $n$ in the AND-OR graph maintains a cost evaluation $f(n)$:
 
 ---
 
-### Slide 11: System Features & User Experience
+---
+
+### Slide 11: The "Subject" Persona: Interactive STEM Learning & Studies
+- **Why Have a "Subject" Persona?**:
+  - Academic examiners and students need intuitive conceptual clarity rather than cold banking error codes.
+  - Selecting `Persona: [ Subject ]` in the top header transforms all algorithmic findings into pedagogical learning explanations.
+- **Pedagogical Analogies Used**:
+  - **Bayes' Theorem $\rightarrow$ "The Detective Clue Multiplier"**:
+    - Prior ($2.5\%$) = Baseline suspects in the wild.
+    - Likelihood Ratio = Strength of each clue ($58\times$ for spliced text, $92\times$ for invalid UTR).
+    - Posterior ($99.3\%$) = Final undeniable verdict.
+  - **AO\* Algorithm $\rightarrow$ "Courtroom Proof Decomposition"**:
+    - OR Nodes = Alternative theories of the crime (Visual Forgery OR ID Spoofing).
+    - AND Nodes = Compounding corroboration needed to convict (Spliced Font AND Missing Watermark).
+- **Speaker Notes**:
+  > "Notice the Persona dropdown in the top header. When an examiner or student switches to the 'Subject' persona, the system translates mathematical derivations into intuitive learning concepts—explaining Bayes' Theorem as a detective gathering compounding clues and AO\* search as a courtroom proof tree."
+
+---
+
+### Slide 12: System Features & User Experience
 - **Frontend Design System**:
   - Editorial white aesthetic with Times New Roman serif typography.
   - Clean SVG iconography powered by Lucide-React.
@@ -420,23 +493,24 @@ Every node $n$ in the AND-OR graph maintains a cost evaluation $f(n)$:
 
 ---
 
-### Slide 12: Conclusion & Future Scope
+### Slide 13: Conclusion & Future Scope
 - **Key Takeaways**:
   - Combines mathematical rigor (Bayes' Theorem) with formal AI search (AO\* Graph Decomposition).
   - Solves the problem of out-of-domain false positives via automated domain classification.
-  - Fully explainable verdicts with step-by-step calculus and visual proof trees.
+  - Provides persona-based explainability: from executive ROI to student learning under the 'Subject' mode.
 - **Future Enhancements**:
   - Direct integration with core banking NPCI settlement APIs.
   - Cross-ledger graph neural network (GNN) tracing for multi-hop money muling rings.
 - **Thank You! Questions?**
 - **Speaker Notes**:
-  > "In conclusion, our project bridges the gap between deep computer vision and formal AI reasoning. By combining Bayes' Theorem with AO\* search, we eliminate black-box guessing and provide mathematically verifiable fraud detection. Thank you, and I welcome any questions."
+  > "In conclusion, our project bridges the gap between deep computer vision and formal AI reasoning. By combining Bayes' Theorem with AO\* search and persona-based explainability, we eliminate black-box guessing and provide mathematically verifiable fraud detection. Thank you, and I welcome any questions."
 
 ---
 
-## 5. File Location Reference
+## 6. File Location Reference
 - **Architecture & Presentation Document**: `PROJECT_PRESENTATION_AND_ARCHITECTURE.md`
 - **Bayesian Engine**: `backend/app/fraud_engine/bayesian_detector.py`
 - **AO\* Search Engine**: `backend/app/fraud_engine/ao_star_search.py`
 - **Multimodal Analyzer**: `backend/app/fraud_engine/screenshot_analyzer.py`
 - **Frontend Dashboard**: `frontend/src/components/FraudDetection/FraudDetectionPanel.tsx`
+

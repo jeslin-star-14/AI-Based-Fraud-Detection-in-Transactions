@@ -1076,243 +1076,369 @@ export const FraudDetectionPanel: React.FC<{ roleMode?: RoleMode }> = ({ roleMod
                     Unlike Bayesian probability, <strong>AO* is a heuristic state-space search algorithm</strong>. It decomposes the fraud confirmation hypothesis into disjunctive alternative vectors (OR nodes) and conjunctive requirement sets (AND nodes), iteratively updating costs bottom-up ($f(n) = g(n) + h(n)$) to derive the minimal-cost proof path.
               </p>
 
-              {/* AO* Interactive Visual Flowchart */}
-              {aoViewMode === 'flowchart' ? (
-                <div className="p-4 bg-slate-50/60 rounded-xl border border-slate-200 overflow-x-auto">
-                  {/* Flowchart Header Info */}
-                  <div className="flex items-center justify-between text-[11px] font-mono text-slate-500 pb-3 mb-4 border-b border-slate-200">
-                    <div className="flex items-center gap-3">
-                      <span className="flex items-center gap-1">
-                        <span className="w-2.5 h-2.5 rounded bg-rose-600 inline-block" />
-                        <span className="text-rose-900 font-bold">Solved Proof Path</span>
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <span className="w-2.5 h-2.5 rounded bg-slate-300 inline-block" />
-                        <span>Unsolved Branch</span>
-                      </span>
-                      <span className="text-slate-600 font-bold">
-                        Cost Formula: f(n) = g(n) + h(n)
-                      </span>
-                    </div>
-                    <span className="font-bold text-slate-700">
-                      Minimal Optimal Cost: f={aoStar?.optimal_cost ?? 10.0}
-                    </span>
-                  </div>
-
-                  {/* Flowchart Graph Canvas */}
-                  <div className="min-w-[620px] flex flex-col items-center">
-                    {/* LEVEL 0: ROOT NODE */}
-                    <div className={`px-5 py-3 rounded-xl border text-center transition-all shadow-xs ${
-                      isNodeSolved('GOAL_FRAUD')
-                        ? 'bg-rose-50 border-rose-300 ring-2 ring-rose-200 text-rose-950'
-                        : 'bg-white border-slate-300 text-slate-800'
-                    }`}>
-                      <div className="flex items-center justify-center gap-1.5 mb-1">
-                        <span className="text-[10px] font-mono font-bold uppercase px-1.5 py-0.2 rounded bg-slate-200 text-slate-700">
-                          Root OR Node (∨)
-                        </span>
-                        <span className="text-[11px] font-mono font-bold text-slate-700">
-                          Cost: {getNodeCost('GOAL_FRAUD', 5.0)}
-                        </span>
-                      </div>
-                      <span className="text-sm font-bold block">Goal: Confirm Fraud in Transaction</span>
-                      <span className="text-[11px] text-slate-500 font-mono mt-0.5 block">
-                        {isNodeSolved('GOAL_FRAUD') ? 'PROVED: Minimal Cost Path Solved' : 'UNPROVEN: All alternatives hold legitimate'}
-                      </span>
-                    </div>
-
-                    {/* SVG Connector from Root to 3 Branches */}
-                    <svg className="w-full h-12 my-1" viewBox="0 0 600 48" fill="none">
-                      {/* Left line to Visual Forgery */}
-                      <path 
-                        d="M 300 0 L 300 16 L 100 16 L 100 48" 
-                        stroke={isNodeSolved('BRANCH_VISUAL_TAMPER') ? '#dc2626' : '#cbd5e1'} 
-                        strokeWidth={isNodeSolved('BRANCH_VISUAL_TAMPER') ? "2.5" : "1.5"}
-                        strokeDasharray={isNodeSolved('BRANCH_VISUAL_TAMPER') ? "none" : "3 3"}
-                      />
-                      {/* Center line to Reference Spoof */}
-                      <path 
-                        d="M 300 0 L 300 48" 
-                        stroke={isNodeSolved('BRANCH_REFERENCE_SPOOF') ? '#dc2626' : '#cbd5e1'} 
-                        strokeWidth={isNodeSolved('BRANCH_REFERENCE_SPOOF') ? "2.5" : "1.5"}
-                        strokeDasharray={isNodeSolved('BRANCH_REFERENCE_SPOOF') ? "none" : "3 3"}
-                      />
-                      {/* Right line to Behavioral Anomaly */}
-                      <path 
-                        d="M 300 0 L 300 16 L 500 16 L 500 48" 
-                        stroke={isNodeSolved('BRANCH_BEHAVIORAL_ANOMALY') ? '#dc2626' : '#cbd5e1'} 
-                        strokeWidth={isNodeSolved('BRANCH_BEHAVIORAL_ANOMALY') ? "2.5" : "1.5"}
-                        strokeDasharray={isNodeSolved('BRANCH_BEHAVIORAL_ANOMALY') ? "none" : "3 3"}
-                      />
-                      {/* OR junction badge */}
-                      <rect x="286" y="8" width="28" height="16" rx="4" fill="#f1f5f9" stroke="#cbd5e1" />
-                      <text x="300" y="20" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#475569" fontFamily="monospace">OR (∨)</text>
-                    </svg>
-
-                    {/* LEVEL 1: 3 AND BRANCH NODES */}
-                    <div className="w-full grid grid-cols-3 gap-4">
-                      {/* Branch 1: Visual Forgery */}
-                      <div className={`p-3 rounded-lg border text-center transition-all ${
-                        isNodeSolved('BRANCH_VISUAL_TAMPER')
-                          ? 'bg-rose-50 border-rose-300 text-rose-950 font-bold shadow-2xs'
-                          : 'bg-white border-slate-200 text-slate-700'
-                      }`}>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-[10px] font-mono px-1 py-0.2 rounded bg-purple-50 text-purple-800 border border-purple-200">
-                            AND (∧)
+                  {/* AO* Interactive Visual Flowchart */}
+                  {aoViewMode === 'flowchart' ? (
+                    <div className="p-4 sm:p-5 bg-slate-50/60 rounded-xl border border-slate-200 overflow-x-auto">
+                      {/* Flowchart Legend & Summary Bar */}
+                      <div className="flex flex-wrap items-center justify-between text-xs font-mono text-slate-500 pb-3 mb-4 border-b border-slate-200 gap-3 min-w-[760px]">
+                        <div className="flex flex-wrap items-center gap-4">
+                          <span className="flex items-center gap-1.5">
+                            <span className="w-2.5 h-2.5 rounded-full bg-rose-600 inline-block" />
+                            <span className="text-rose-900 font-bold">Solved Proof Path</span>
                           </span>
-                          <span className="text-[10px] font-mono text-slate-600">
-                            Cost: {getNodeCost('BRANCH_VISUAL_TAMPER', 3.0)}
+                          <span className="flex items-center gap-1.5">
+                            <span className="w-2.5 h-2.5 rounded-full bg-slate-300 inline-block" />
+                            <span>Unsolved Branch</span>
+                          </span>
+                          <span className="text-slate-700 font-semibold">
+                            Cost Formula: f(n) = g(n) + h(n)
                           </span>
                         </div>
-                        <span className="text-xs font-bold block">Branch 1: Visual Forgery</span>
-                        <span className="text-[10px] text-slate-500 font-mono mt-0.5 block">
-                          {isNodeSolved('BRANCH_VISUAL_TAMPER') ? 'SOLVED' : 'UNPROVEN'}
+                        <span className="font-bold text-slate-800 bg-white px-2.5 py-1 rounded border border-slate-200">
+                          Minimal Optimal Cost: f={aoStar?.optimal_cost ?? 10.0}
                         </span>
                       </div>
 
-                      {/* Branch 2: Reference Spoof */}
-                      <div className={`p-3 rounded-lg border text-center transition-all ${
-                        isNodeSolved('BRANCH_REFERENCE_SPOOF')
-                          ? 'bg-rose-50 border-rose-300 text-rose-950 font-bold shadow-2xs'
-                          : 'bg-white border-slate-200 text-slate-700'
-                      }`}>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-[10px] font-mono px-1 py-0.2 rounded bg-purple-50 text-purple-800 border border-purple-200">
-                            AND (∧)
-                          </span>
-                          <span className="text-[10px] font-mono text-slate-600">
-                            Cost: {getNodeCost('BRANCH_REFERENCE_SPOOF', 4.0)}
-                          </span>
-                        </div>
-                        <span className="text-xs font-bold block">Branch 2: Reference Spoof</span>
-                        <span className="text-[10px] text-slate-500 font-mono mt-0.5 block">
-                          {isNodeSolved('BRANCH_REFERENCE_SPOOF') ? 'SOLVED' : 'UNPROVEN'}
-                        </span>
-                      </div>
+                      {/* Cohesive, Centered AO* Visual Hierarchy Canvas */}
+                      <div className="w-full min-w-[760px] max-w-[800px] mx-auto select-none">
+                        <svg
+                          viewBox="0 0 800 370"
+                          className="w-full h-auto drop-shadow-xs"
+                          style={{ minHeight: '350px' }}
+                        >
+                          {/* Defs for soft dropshadows / badges */}
+                          <defs>
+                            <filter id="cardShadow" x="-10%" y="-10%" width="120%" height="120%">
+                              <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodColor="#0f172a" floodOpacity="0.06" />
+                            </filter>
+                          </defs>
 
-                      {/* Branch 3: Behavioral Anomaly */}
-                      <div className={`p-3 rounded-lg border text-center transition-all ${
-                        isNodeSolved('BRANCH_BEHAVIORAL_ANOMALY')
-                          ? 'bg-rose-50 border-rose-300 text-rose-950 font-bold shadow-2xs'
-                          : 'bg-white border-slate-200 text-slate-700'
-                      }`}>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-[10px] font-mono px-1 py-0.2 rounded bg-purple-50 text-purple-800 border border-purple-200">
-                            AND (∧)
-                          </span>
-                          <span className="text-[10px] font-mono text-slate-600">
-                            Cost: {getNodeCost('BRANCH_BEHAVIORAL_ANOMALY', 4.5)}
-                          </span>
-                        </div>
-                        <span className="text-xs font-bold block">Branch 3: Behavioral Outlier</span>
-                        <span className="text-[10px] text-slate-500 font-mono mt-0.5 block">
-                          {isNodeSolved('BRANCH_BEHAVIORAL_ANOMALY') ? 'SOLVED' : 'UNPROVEN'}
-                        </span>
+                          {/* ----------------- CONNECTOR LINES: ROOT (400, 72) -> BRANCHES (130, 400, 670) ----------------- */}
+                          {/* Branch 1 Left */}
+                          <path
+                            d="M 400 72 L 400 96 L 130 96 L 130 120"
+                            stroke={isNodeSolved('BRANCH_VISUAL_TAMPER') ? '#dc2626' : '#94a3b8'}
+                            strokeWidth={isNodeSolved('BRANCH_VISUAL_TAMPER') ? '2.5' : '1.5'}
+                            strokeDasharray={isNodeSolved('BRANCH_VISUAL_TAMPER') ? 'none' : '4 4'}
+                            fill="none"
+                          />
+                          {/* Branch 2 Center */}
+                          <path
+                            d="M 400 72 L 400 120"
+                            stroke={isNodeSolved('BRANCH_REFERENCE_SPOOF') ? '#dc2626' : '#94a3b8'}
+                            strokeWidth={isNodeSolved('BRANCH_REFERENCE_SPOOF') ? '2.5' : '1.5'}
+                            strokeDasharray={isNodeSolved('BRANCH_REFERENCE_SPOOF') ? 'none' : '4 4'}
+                            fill="none"
+                          />
+                          {/* Branch 3 Right */}
+                          <path
+                            d="M 400 72 L 400 96 L 670 96 L 670 120"
+                            stroke={isNodeSolved('BRANCH_BEHAVIORAL_ANOMALY') ? '#dc2626' : '#94a3b8'}
+                            strokeWidth={isNodeSolved('BRANCH_BEHAVIORAL_ANOMALY') ? '2.5' : '1.5'}
+                            strokeDasharray={isNodeSolved('BRANCH_BEHAVIORAL_ANOMALY') ? 'none' : '4 4'}
+                            fill="none"
+                          />
+
+                          {/* OR (∨) Disjunction Center Junction Badge */}
+                          <rect x="375" y="86" width="50" height="20" rx="4" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1" />
+                          <text x="400" y="100" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#475569" fontFamily="monospace">OR (∨)</text>
+
+                          {/* ----------------- CONNECTOR LINES & AND ARCS: BRANCHES -> LEAVES ----------------- */}
+                          {/* Left Branch (130, 192) -> Leaf 1 (68, 260) & Leaf 2 (192, 260) */}
+                          <path
+                            d="M 130 192 L 130 216 L 68 216 L 68 260"
+                            stroke={isNodeSolved('LEAF_FONT_TAMPER') ? '#dc2626' : '#94a3b8'}
+                            strokeWidth="1.5"
+                            strokeDasharray={isNodeSolved('LEAF_FONT_TAMPER') ? 'none' : '3 3'}
+                            fill="none"
+                          />
+                          <path
+                            d="M 130 192 L 130 216 L 192 216 L 192 260"
+                            stroke={isNodeSolved('LEAF_WATERMARK_MISSING') ? '#dc2626' : '#94a3b8'}
+                            strokeWidth="1.5"
+                            strokeDasharray={isNodeSolved('LEAF_WATERMARK_MISSING') ? 'none' : '3 3'}
+                            fill="none"
+                          />
+                          {/* Branch 1 Conjunctive AND Arc */}
+                          <path d="M 98 230 Q 130 242 162 230" stroke="#7c3aed" strokeWidth="2" fill="none" />
+                          <rect x="108" y="235" width="44" height="15" rx="3" fill="#f5f3ff" stroke="#ddd6fe" strokeWidth="1" />
+                          <text x="130" y="246" textAnchor="middle" fontSize="9" fontWeight="bold" fill="#7c3aed" fontFamily="monospace">AND (∧)</text>
+
+                          {/* Center Branch (400, 192) -> Leaf 3 (338, 260) & Leaf 4 (462, 260) */}
+                          <path
+                            d="M 400 192 L 400 216 L 338 216 L 338 260"
+                            stroke={isNodeSolved('LEAF_UTR_INVALID') ? '#dc2626' : '#94a3b8'}
+                            strokeWidth="1.5"
+                            strokeDasharray={isNodeSolved('LEAF_UTR_INVALID') ? 'none' : '3 3'}
+                            fill="none"
+                          />
+                          <path
+                            d="M 400 192 L 400 216 L 462 216 L 462 260"
+                            stroke={isNodeSolved('LEAF_BENEFICIARY_MISMATCH') ? '#dc2626' : '#94a3b8'}
+                            strokeWidth="1.5"
+                            strokeDasharray={isNodeSolved('LEAF_BENEFICIARY_MISMATCH') ? 'none' : '3 3'}
+                            fill="none"
+                          />
+                          {/* Branch 2 Conjunctive AND Arc */}
+                          <path d="M 368 230 Q 400 242 432 230" stroke="#7c3aed" strokeWidth="2" fill="none" />
+                          <rect x="378" y="235" width="44" height="15" rx="3" fill="#f5f3ff" stroke="#ddd6fe" strokeWidth="1" />
+                          <text x="400" y="246" textAnchor="middle" fontSize="9" fontWeight="bold" fill="#7c3aed" fontFamily="monospace">AND (∧)</text>
+
+                          {/* Right Branch (670, 192) -> Leaf 5 (608, 260) & Leaf 6 (732, 260) */}
+                          <path
+                            d="M 670 192 L 670 216 L 608 216 L 608 260"
+                            stroke={isNodeSolved('LEAF_AMOUNT_OUTLIER') ? '#dc2626' : '#94a3b8'}
+                            strokeWidth="1.5"
+                            strokeDasharray={isNodeSolved('LEAF_AMOUNT_OUTLIER') ? 'none' : '3 3'}
+                            fill="none"
+                          />
+                          <path
+                            d="M 670 192 L 670 216 L 732 216 L 732 260"
+                            stroke={isNodeSolved('LEAF_TIME_ANOMALY') ? '#dc2626' : '#94a3b8'}
+                            strokeWidth="1.5"
+                            strokeDasharray={isNodeSolved('LEAF_TIME_ANOMALY') ? 'none' : '3 3'}
+                            fill="none"
+                          />
+                          {/* Branch 3 Conjunctive AND Arc */}
+                          <path d="M 638 230 Q 670 242 702 230" stroke="#7c3aed" strokeWidth="2" fill="none" />
+                          <rect x="648" y="235" width="44" height="15" rx="3" fill="#f5f3ff" stroke="#ddd6fe" strokeWidth="1" />
+                          <text x="670" y="246" textAnchor="middle" fontSize="9" fontWeight="bold" fill="#7c3aed" fontFamily="monospace">AND (∧)</text>
+
+                          {/* ----------------- LEVEL 0: ROOT NODE CARD (centered at 400, y: 10 to 72) ----------------- */}
+                          <g filter="url(#cardShadow)">
+                            <rect
+                              x="250"
+                              y="10"
+                              width="300"
+                              height="62"
+                              rx="8"
+                              fill={isNodeSolved('GOAL_FRAUD') ? '#fef2f2' : '#ffffff'}
+                              stroke={isNodeSolved('GOAL_FRAUD') ? '#f87171' : '#cbd5e1'}
+                              strokeWidth={isNodeSolved('GOAL_FRAUD') ? '2' : '1.5'}
+                            />
+                            {/* Sub-badge: ROOT OR NODE */}
+                            <rect x="290" y="16" width="102" height="16" rx="3" fill="#f1f5f9" stroke="#e2e8f0" strokeWidth="1" />
+                            <text x="341" y="28" textAnchor="middle" fontSize="9" fontWeight="bold" fill="#475569" fontFamily="monospace">ROOT OR NODE (∨)</text>
+                            {/* Cost Badge */}
+                            <text x="460" y="28" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#64748b" fontFamily="monospace">
+                              Cost: {getNodeCost('GOAL_FRAUD', 5.0)}
+                            </text>
+                            {/* Goal Title */}
+                            <text x="400" y="47" textAnchor="middle" fontSize="13" fontWeight="bold" fill="#0f172a" fontFamily="system-ui, -apple-system, sans-serif">
+                              Goal: Confirm Fraud in Transaction
+                            </text>
+                            {/* State Text */}
+                            <text x="400" y="62" textAnchor="middle" fontSize="10" fill="#64748b" fontFamily="monospace">
+                              {isNodeSolved('GOAL_FRAUD') ? 'PROVED: Minimal Cost Path Solved' : 'UNPROVEN: All alternatives hold legitimate'}
+                            </text>
+                          </g>
+
+                          {/* ----------------- LEVEL 1: 3 AND BRANCH NODES (y: 120 to 192) ----------------- */}
+                          {/* Branch 1: Visual Forgery (centered at 130, width 210 -> x: 25 to 235) */}
+                          <g filter="url(#cardShadow)">
+                            <rect
+                              x="25"
+                              y="120"
+                              width="210"
+                              height="72"
+                              rx="8"
+                              fill={isNodeSolved('BRANCH_VISUAL_TAMPER') ? '#fef2f2' : '#ffffff'}
+                              stroke={isNodeSolved('BRANCH_VISUAL_TAMPER') ? '#f87171' : '#e2e8f0'}
+                              strokeWidth={isNodeSolved('BRANCH_VISUAL_TAMPER') ? '2' : '1.5'}
+                            />
+                            {/* AND Badge */}
+                            <rect x="35" y="128" width="54" height="16" rx="3" fill="#f5f3ff" stroke="#ddd6fe" strokeWidth="1" />
+                            <text x="62" y="139" textAnchor="middle" fontSize="9" fontWeight="bold" fill="#6d28d9" fontFamily="monospace">AND (∧)</text>
+                            {/* Branch Cost */}
+                            <text x="185" y="139" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#64748b" fontFamily="monospace">
+                              Cost: {getNodeCost('BRANCH_VISUAL_TAMPER', 3.0)}
+                            </text>
+                            <text x="130" y="161" textAnchor="middle" fontSize="12" fontWeight="bold" fill="#0f172a">
+                              Branch 1: Visual Forgery
+                            </text>
+                            <text x="130" y="178" textAnchor="middle" fontSize="10" fontWeight="bold" fill={isNodeSolved('BRANCH_VISUAL_TAMPER') ? '#b91c1c' : '#94a3b8'} fontFamily="monospace">
+                              {isNodeSolved('BRANCH_VISUAL_TAMPER') ? 'SOLVED' : 'UNPROVEN'}
+                            </text>
+                          </g>
+
+                          {/* Branch 2: Reference Spoof (centered at 400, width 210 -> x: 295 to 505) */}
+                          <g filter="url(#cardShadow)">
+                            <rect
+                              x="295"
+                              y="120"
+                              width="210"
+                              height="72"
+                              rx="8"
+                              fill={isNodeSolved('BRANCH_REFERENCE_SPOOF') ? '#fef2f2' : '#ffffff'}
+                              stroke={isNodeSolved('BRANCH_REFERENCE_SPOOF') ? '#f87171' : '#e2e8f0'}
+                              strokeWidth={isNodeSolved('BRANCH_REFERENCE_SPOOF') ? '2' : '1.5'}
+                            />
+                            {/* AND Badge */}
+                            <rect x="305" y="128" width="54" height="16" rx="3" fill="#f5f3ff" stroke="#ddd6fe" strokeWidth="1" />
+                            <text x="332" y="139" textAnchor="middle" fontSize="9" fontWeight="bold" fill="#6d28d9" fontFamily="monospace">AND (∧)</text>
+                            {/* Branch Cost */}
+                            <text x="455" y="139" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#64748b" fontFamily="monospace">
+                              Cost: {getNodeCost('BRANCH_REFERENCE_SPOOF', 4.0)}
+                            </text>
+                            <text x="400" y="161" textAnchor="middle" fontSize="12" fontWeight="bold" fill="#0f172a">
+                              Branch 2: Reference Spoof
+                            </text>
+                            <text x="400" y="178" textAnchor="middle" fontSize="10" fontWeight="bold" fill={isNodeSolved('BRANCH_REFERENCE_SPOOF') ? '#b91c1c' : '#94a3b8'} fontFamily="monospace">
+                              {isNodeSolved('BRANCH_REFERENCE_SPOOF') ? 'SOLVED' : 'UNPROVEN'}
+                            </text>
+                          </g>
+
+                          {/* Branch 3: Behavioral Outlier (centered at 670, width 210 -> x: 565 to 775) */}
+                          <g filter="url(#cardShadow)">
+                            <rect
+                              x="565"
+                              y="120"
+                              width="210"
+                              height="72"
+                              rx="8"
+                              fill={isNodeSolved('BRANCH_BEHAVIORAL_ANOMALY') ? '#fef2f2' : '#ffffff'}
+                              stroke={isNodeSolved('BRANCH_BEHAVIORAL_ANOMALY') ? '#f87171' : '#e2e8f0'}
+                              strokeWidth={isNodeSolved('BRANCH_BEHAVIORAL_ANOMALY') ? '2' : '1.5'}
+                            />
+                            {/* AND Badge */}
+                            <rect x="575" y="128" width="54" height="16" rx="3" fill="#f5f3ff" stroke="#ddd6fe" strokeWidth="1" />
+                            <text x="602" y="139" textAnchor="middle" fontSize="9" fontWeight="bold" fill="#6d28d9" fontFamily="monospace">AND (∧)</text>
+                            {/* Branch Cost */}
+                            <text x="725" y="139" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#64748b" fontFamily="monospace">
+                              Cost: {getNodeCost('BRANCH_BEHAVIORAL_ANOMALY', 4.5)}
+                            </text>
+                            <text x="670" y="161" textAnchor="middle" fontSize="12" fontWeight="bold" fill="#0f172a">
+                              Branch 3: Behavioral Outlier
+                            </text>
+                            <text x="670" y="178" textAnchor="middle" fontSize="10" fontWeight="bold" fill={isNodeSolved('BRANCH_BEHAVIORAL_ANOMALY') ? '#b91c1c' : '#94a3b8'} fontFamily="monospace">
+                              {isNodeSolved('BRANCH_BEHAVIORAL_ANOMALY') ? 'SOLVED' : 'UNPROVEN'}
+                            </text>
+                          </g>
+
+                          {/* ----------------- LEVEL 2: 6 TERMINAL LEAF NODES (y: 260 to 330, width 110 each) ----------------- */}
+                          {/* Leaf 1: Font Alteration (centered at 68 -> x: 13 to 123) */}
+                          <g filter="url(#cardShadow)">
+                            <rect
+                              x="13"
+                              y="260"
+                              width="110"
+                              height="64"
+                              rx="7"
+                              fill={isNodeSolved('LEAF_FONT_TAMPER') ? '#fef2f2' : '#ffffff'}
+                              stroke={isNodeSolved('LEAF_FONT_TAMPER') ? '#f87171' : '#e2e8f0'}
+                              strokeWidth={isNodeSolved('LEAF_FONT_TAMPER') ? '2' : '1.5'}
+                            />
+                            <text x="68" y="286" textAnchor="middle" fontSize="11" fontWeight="bold" fill="#0f172a">
+                              Font Alteration
+                            </text>
+                            <text x="68" y="306" textAnchor="middle" fontSize="9.5" fontWeight="bold" fill={isNodeSolved('LEAF_FONT_TAMPER') ? '#b91c1c' : '#64748b'} fontFamily="monospace">
+                              {isNodeSolved('LEAF_FONT_TAMPER') ? 'SOLVED' : 'COST 10.0'}
+                            </text>
+                          </g>
+
+                          {/* Leaf 2: Missing Seal (centered at 192 -> x: 137 to 247) */}
+                          <g filter="url(#cardShadow)">
+                            <rect
+                              x="137"
+                              y="260"
+                              width="110"
+                              height="64"
+                              rx="7"
+                              fill={isNodeSolved('LEAF_WATERMARK_MISSING') ? '#fef2f2' : '#ffffff'}
+                              stroke={isNodeSolved('LEAF_WATERMARK_MISSING') ? '#f87171' : '#e2e8f0'}
+                              strokeWidth={isNodeSolved('LEAF_WATERMARK_MISSING') ? '2' : '1.5'}
+                            />
+                            <text x="192" y="286" textAnchor="middle" fontSize="11" fontWeight="bold" fill="#0f172a">
+                              Missing Seal
+                            </text>
+                            <text x="192" y="306" textAnchor="middle" fontSize="9.5" fontWeight="bold" fill={isNodeSolved('LEAF_WATERMARK_MISSING') ? '#b91c1c' : '#64748b'} fontFamily="monospace">
+                              {isNodeSolved('LEAF_WATERMARK_MISSING') ? 'SOLVED' : 'COST 10.0'}
+                            </text>
+                          </g>
+
+                          {/* Leaf 3: Invalid UTR (centered at 338 -> x: 283 to 393) */}
+                          <g filter="url(#cardShadow)">
+                            <rect
+                              x="283"
+                              y="260"
+                              width="110"
+                              height="64"
+                              rx="7"
+                              fill={isNodeSolved('LEAF_UTR_INVALID') ? '#fef2f2' : '#ffffff'}
+                              stroke={isNodeSolved('LEAF_UTR_INVALID') ? '#f87171' : '#e2e8f0'}
+                              strokeWidth={isNodeSolved('LEAF_UTR_INVALID') ? '2' : '1.5'}
+                            />
+                            <text x="338" y="286" textAnchor="middle" fontSize="11" fontWeight="bold" fill="#0f172a">
+                              Invalid UTR
+                            </text>
+                            <text x="338" y="306" textAnchor="middle" fontSize="9.5" fontWeight="bold" fill={isNodeSolved('LEAF_UTR_INVALID') ? '#b91c1c' : '#64748b'} fontFamily="monospace">
+                              {isNodeSolved('LEAF_UTR_INVALID') ? 'SOLVED' : 'COST 10.0'}
+                            </text>
+                          </g>
+
+                          {/* Leaf 4: Payee Mismatch (centered at 462 -> x: 407 to 517) */}
+                          <g filter="url(#cardShadow)">
+                            <rect
+                              x="407"
+                              y="260"
+                              width="110"
+                              height="64"
+                              rx="7"
+                              fill={isNodeSolved('LEAF_BENEFICIARY_MISMATCH') ? '#fef2f2' : '#ffffff'}
+                              stroke={isNodeSolved('LEAF_BENEFICIARY_MISMATCH') ? '#f87171' : '#e2e8f0'}
+                              strokeWidth={isNodeSolved('LEAF_BENEFICIARY_MISMATCH') ? '2' : '1.5'}
+                            />
+                            <text x="462" y="286" textAnchor="middle" fontSize="11" fontWeight="bold" fill="#0f172a">
+                              Payee Mismatch
+                            </text>
+                            <text x="462" y="306" textAnchor="middle" fontSize="9.5" fontWeight="bold" fill={isNodeSolved('LEAF_BENEFICIARY_MISMATCH') ? '#b91c1c' : '#64748b'} fontFamily="monospace">
+                              {isNodeSolved('LEAF_BENEFICIARY_MISMATCH') ? 'SOLVED' : 'COST 10.0'}
+                            </text>
+                          </g>
+
+                          {/* Leaf 5: Amount Outlier (centered at 608 -> x: 553 to 663) */}
+                          <g filter="url(#cardShadow)">
+                            <rect
+                              x="553"
+                              y="260"
+                              width="110"
+                              height="64"
+                              rx="7"
+                              fill={isNodeSolved('LEAF_AMOUNT_OUTLIER') ? '#fef2f2' : '#ffffff'}
+                              stroke={isNodeSolved('LEAF_AMOUNT_OUTLIER') ? '#f87171' : '#e2e8f0'}
+                              strokeWidth={isNodeSolved('LEAF_AMOUNT_OUTLIER') ? '2' : '1.5'}
+                            />
+                            <text x="608" y="286" textAnchor="middle" fontSize="11" fontWeight="bold" fill="#0f172a">
+                              Amount Outlier
+                            </text>
+                            <text x="608" y="306" textAnchor="middle" fontSize="9.5" fontWeight="bold" fill={isNodeSolved('LEAF_AMOUNT_OUTLIER') ? '#b91c1c' : '#64748b'} fontFamily="monospace">
+                              {isNodeSolved('LEAF_AMOUNT_OUTLIER') ? 'SOLVED' : 'COST 10.0'}
+                            </text>
+                          </g>
+
+                          {/* Leaf 6: Time Velocity (centered at 732 -> x: 677 to 787) */}
+                          <g filter="url(#cardShadow)">
+                            <rect
+                              x="677"
+                              y="260"
+                              width="110"
+                              height="64"
+                              rx="7"
+                              fill={isNodeSolved('LEAF_TIME_ANOMALY') ? '#fef2f2' : '#ffffff'}
+                              stroke={isNodeSolved('LEAF_TIME_ANOMALY') ? '#f87171' : '#e2e8f0'}
+                              strokeWidth={isNodeSolved('LEAF_TIME_ANOMALY') ? '2' : '1.5'}
+                            />
+                            <text x="732" y="286" textAnchor="middle" fontSize="11" fontWeight="bold" fill="#0f172a">
+                              Time Velocity
+                            </text>
+                            <text x="732" y="306" textAnchor="middle" fontSize="9.5" fontWeight="bold" fill={isNodeSolved('LEAF_TIME_ANOMALY') ? '#b91c1c' : '#64748b'} fontFamily="monospace">
+                              {isNodeSolved('LEAF_TIME_ANOMALY') ? 'SOLVED' : 'COST 10.0'}
+                            </text>
+                          </g>
+                        </svg>
                       </div>
                     </div>
-
-                    {/* SVG Connectors with AND Arcs to Leaves */}
-                    <svg className="w-full h-10 my-1" viewBox="0 0 600 40" fill="none">
-                      {/* Left branch AND split */}
-                      <path d="M 100 0 L 100 12 L 50 12 L 50 40" stroke={isNodeSolved('LEAF_FONT_TAMPER') ? '#dc2626' : '#cbd5e1'} strokeWidth="1.5" />
-                      <path d="M 100 0 L 100 12 L 150 12 L 150 40" stroke={isNodeSolved('LEAF_WATERMARK_MISSING') ? '#dc2626' : '#cbd5e1'} strokeWidth="1.5" />
-                      {/* AND Arc curve linking left leaves */}
-                      <path d="M 70 24 Q 100 32 130 24" stroke="#7c3aed" strokeWidth="1.5" fill="none" />
-                      <text x="100" y="36" textAnchor="middle" fontSize="9" fontWeight="bold" fill="#7c3aed" fontFamily="monospace">AND (∧)</text>
-
-                      {/* Center branch AND split */}
-                      <path d="M 300 0 L 300 12 L 250 12 L 250 40" stroke={isNodeSolved('LEAF_UTR_INVALID') ? '#dc2626' : '#cbd5e1'} strokeWidth="1.5" />
-                      <path d="M 300 0 L 300 12 L 350 12 L 350 40" stroke={isNodeSolved('LEAF_BENEFICIARY_MISMATCH') ? '#dc2626' : '#cbd5e1'} strokeWidth="1.5" />
-                      {/* AND Arc curve linking center leaves */}
-                      <path d="M 270 24 Q 300 32 330 24" stroke="#7c3aed" strokeWidth="1.5" fill="none" />
-                      <text x="300" y="36" textAnchor="middle" fontSize="9" fontWeight="bold" fill="#7c3aed" fontFamily="monospace">AND (∧)</text>
-
-                      {/* Right branch AND split */}
-                      <path d="M 500 0 L 500 12 L 450 12 L 450 40" stroke={isNodeSolved('LEAF_AMOUNT_OUTLIER') ? '#dc2626' : '#cbd5e1'} strokeWidth="1.5" />
-                      <path d="M 500 0 L 500 12 L 550 12 L 550 40" stroke={isNodeSolved('LEAF_TIME_ANOMALY') ? '#dc2626' : '#cbd5e1'} strokeWidth="1.5" />
-                      {/* AND Arc curve linking right leaves */}
-                      <path d="M 470 24 Q 500 32 530 24" stroke="#7c3aed" strokeWidth="1.5" fill="none" />
-                      <text x="500" y="36" textAnchor="middle" fontSize="9" fontWeight="bold" fill="#7c3aed" fontFamily="monospace">AND (∧)</text>
-                    </svg>
-
-                    {/* LEVEL 2: 6 TERMINAL LEAF NODES */}
-                    <div className="w-full grid grid-cols-6 gap-2">
-                      {/* Leaf 1 */}
-                      <div className={`p-2 rounded border text-center ${
-                        isNodeSolved('LEAF_FONT_TAMPER')
-                          ? 'bg-rose-50 border-rose-300 text-rose-950 font-bold'
-                          : 'bg-white border-slate-200 text-slate-600'
-                      }`}>
-                        <span className="text-[10px] font-bold block leading-tight">Font Alteration</span>
-                        <span className="text-[9px] font-mono block mt-1 text-slate-500">
-                          {isNodeSolved('LEAF_FONT_TAMPER') ? 'SOLVED' : 'COST 10.0'}
-                        </span>
-                      </div>
-
-                      {/* Leaf 2 */}
-                      <div className={`p-2 rounded border text-center ${
-                        isNodeSolved('LEAF_WATERMARK_MISSING')
-                          ? 'bg-rose-50 border-rose-300 text-rose-950 font-bold'
-                          : 'bg-white border-slate-200 text-slate-600'
-                      }`}>
-                        <span className="text-[10px] font-bold block leading-tight">Missing Seal</span>
-                        <span className="text-[9px] font-mono block mt-1 text-slate-500">
-                          {isNodeSolved('LEAF_WATERMARK_MISSING') ? 'SOLVED' : 'COST 10.0'}
-                        </span>
-                      </div>
-
-                      {/* Leaf 3 */}
-                      <div className={`p-2 rounded border text-center ${
-                        isNodeSolved('LEAF_UTR_INVALID')
-                          ? 'bg-rose-50 border-rose-300 text-rose-950 font-bold'
-                          : 'bg-white border-slate-200 text-slate-600'
-                      }`}>
-                        <span className="text-[10px] font-bold block leading-tight">Invalid UTR</span>
-                        <span className="text-[9px] font-mono block mt-1 text-slate-500">
-                          {isNodeSolved('LEAF_UTR_INVALID') ? 'SOLVED' : 'COST 10.0'}
-                        </span>
-                      </div>
-
-                      {/* Leaf 4 */}
-                      <div className={`p-2 rounded border text-center ${
-                        isNodeSolved('LEAF_BENEFICIARY_MISMATCH')
-                          ? 'bg-rose-50 border-rose-300 text-rose-950 font-bold'
-                          : 'bg-white border-slate-200 text-slate-600'
-                      }`}>
-                        <span className="text-[10px] font-bold block leading-tight">Payee Mismatch</span>
-                        <span className="text-[9px] font-mono block mt-1 text-slate-500">
-                          {isNodeSolved('LEAF_BENEFICIARY_MISMATCH') ? 'SOLVED' : 'COST 10.0'}
-                        </span>
-                      </div>
-
-                      {/* Leaf 5 */}
-                      <div className={`p-2 rounded border text-center ${
-                        isNodeSolved('LEAF_AMOUNT_OUTLIER')
-                          ? 'bg-rose-50 border-rose-300 text-rose-950 font-bold'
-                          : 'bg-white border-slate-200 text-slate-600'
-                      }`}>
-                        <span className="text-[10px] font-bold block leading-tight">Amount Outlier</span>
-                        <span className="text-[9px] font-mono block mt-1 text-slate-500">
-                          {isNodeSolved('LEAF_AMOUNT_OUTLIER') ? 'SOLVED' : 'COST 10.0'}
-                        </span>
-                      </div>
-
-                      {/* Leaf 6 */}
-                      <div className={`p-2 rounded border text-center ${
-                        isNodeSolved('LEAF_TIME_ANOMALY')
-                          ? 'bg-rose-50 border-rose-300 text-rose-950 font-bold'
-                          : 'bg-white border-slate-200 text-slate-600'
-                      }`}>
-                        <span className="text-[10px] font-bold block leading-tight">Time Velocity</span>
-                        <span className="text-[9px] font-mono block mt-1 text-slate-500">
-                          {isNodeSolved('LEAF_TIME_ANOMALY') ? 'SOLVED' : 'COST 10.0'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : (
+                  ) : (
                 /* Proof Tree Node Cards */
                 <div className="space-y-2.5">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block font-mono">

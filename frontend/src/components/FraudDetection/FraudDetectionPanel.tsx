@@ -359,10 +359,10 @@ export const FraudDetectionPanel: React.FC<{ roleMode?: RoleMode }> = ({ roleMod
       <div className="bg-white border-b border-slate-200 px-6 py-6 sm:px-8">
         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
               Transaction Fraud Detection
             </h1>
-            <p className="text-xs text-slate-500 mt-1 max-w-2xl">
+            <p className="text-sm text-slate-500 mt-1 max-w-2xl">
               Inspect payment receipts, vouchers, and transactions for alterations, invalid references, and fraud patterns.
             </p>
           </div>

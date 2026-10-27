@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import type { RoleMode } from '../../types';
 import { 
   ShieldAlert, 
   ShieldCheck,
@@ -16,7 +17,14 @@ import {
   Bot,
   Workflow,
   FileText,
-  Info
+  Info,
+  GraduationCap,
+  BookOpen,
+  HelpCircle,
+  Lightbulb,
+  Sparkles,
+  Calculator,
+  Eye
 } from 'lucide-react';
 
 interface DetectionHistoryItem {
@@ -34,12 +42,22 @@ interface DetectionHistoryItem {
   fullData?: any;
 }
 
-export const FraudDetectionPanel: React.FC = () => {
+export const FraudDetectionPanel: React.FC<{ roleMode?: RoleMode }> = ({ roleMode = 'Auditor' }) => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
 
-  // Active view: Scanner vs Audit Ledger
-  const [activeSubTab, setActiveSubTab] = useState<'scanner' | 'history'>('scanner');
+  // Active view: Scanner vs Audit Ledger vs Subject Study Hub
+  const [activeSubTab, setActiveSubTab] = useState<'scanner' | 'history' | 'studies'>('scanner');
+
+  // Study Hub Active Module
+  const [activeStudyModule, setActiveStudyModule] = useState<'bayes' | 'ao_star' | 'forensics' | 'domain' | 'viva_qa'>('bayes');
+
+  // Automatically switch to studies view when user changes dropdown to Subject
+  useEffect(() => {
+    if (roleMode === 'Subject') {
+      setActiveSubTab('studies');
+    }
+  }, [roleMode]);
 
   // AO* View Toggle: Flowchart vs Table
   const [aoViewMode, setAoViewMode] = useState<'flowchart' | 'table'>('flowchart');
@@ -355,7 +373,7 @@ export const FraudDetectionPanel: React.FC = () => {
             <div className="inline-flex bg-slate-100 p-1 rounded-xl border border-slate-200">
               <button
                 onClick={() => setActiveSubTab('scanner')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all ${
                   activeSubTab === 'scanner'
                     ? 'bg-white text-slate-900 shadow-xs border border-slate-200/80'
                     : 'text-slate-600 hover:text-slate-900'
@@ -366,7 +384,7 @@ export const FraudDetectionPanel: React.FC = () => {
               </button>
               <button
                 onClick={() => setActiveSubTab('history')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all ${
                   activeSubTab === 'history'
                     ? 'bg-white text-slate-900 shadow-xs border border-slate-200/80'
                     : 'text-slate-600 hover:text-slate-900'
@@ -378,6 +396,22 @@ export const FraudDetectionPanel: React.FC = () => {
                   {detectionHistory.length}
                 </span>
               </button>
+              <button
+                onClick={() => setActiveSubTab('studies')}
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all ${
+                  activeSubTab === 'studies'
+                    ? 'bg-white text-indigo-950 shadow-xs border border-indigo-200 font-extrabold'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <GraduationCap className="w-4 h-4 text-indigo-600" />
+                <span>Study Material & Viva Guide</span>
+                {roleMode === 'Subject' && (
+                  <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800 font-mono">
+                    ACTIVE
+                  </span>
+                )}
+              </button>
             </div>
           </div>
         </div>
@@ -388,6 +422,33 @@ export const FraudDetectionPanel: React.FC = () => {
         <div className="max-w-7xl mx-auto w-full p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1">
           {/* Left Column: Forensic Intake & Dynamic Parameter Extraction (5 cols) */}
           <div className="lg:col-span-5 flex flex-col gap-6">
+            {/* Subject Persona Learning Callout Banner */}
+            {roleMode === 'Subject' && (
+              <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-200 rounded-xl p-4 flex items-center justify-between text-indigo-950 shadow-2xs">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-indigo-100 rounded-lg text-indigo-700 shrink-0">
+                    <GraduationCap className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
+                      Subject / STEM Learning Persona Active
+                      <span className="px-1.5 py-0.2 rounded text-[10px] bg-indigo-200/80 text-indigo-900 font-mono">Studies Mode</span>
+                    </h3>
+                    <p className="text-xs text-indigo-800 mt-0.5 leading-relaxed">
+                      Pedagogical explanations for Bayes' Theorem & AO* Graph Search are active.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setActiveSubTab('studies')}
+                  className="px-3 py-1.5 bg-indigo-900 hover:bg-indigo-800 text-white rounded-lg text-xs font-bold transition-all shadow-xs shrink-0 flex items-center gap-1 font-mono"
+                >
+                  <span>Open Study Material</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
             {/* Direct Receipt Upload */}
             <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs">
               <div className="flex items-center justify-between mb-3">
@@ -1281,7 +1342,7 @@ export const FraudDetectionPanel: React.FC = () => {
         </div>
           </div>
         </div>
-      ) : (
+      ) : activeSubTab === 'history' ? (
         /* Detection Audit Ledger (History) View */
         <div className="max-w-7xl mx-auto w-full p-6 sm:p-8 flex-1">
           <div className="bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-xs">
@@ -1379,6 +1440,520 @@ export const FraudDetectionPanel: React.FC = () => {
                 </table>
               </div>
             )}
+          </div>
+        </div>
+      ) : (
+        /* Academic & Viva Voce Study Hub (Subject Mode) */
+        <div className="max-w-7xl mx-auto w-full p-6 sm:p-8 flex-1 flex flex-col gap-6">
+          {/* Header Banner */}
+          <div className="bg-gradient-to-r from-indigo-50 via-blue-50 to-slate-50 border border-indigo-200 rounded-xl p-6 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div>
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-indigo-100 text-indigo-900 text-xs font-bold font-mono uppercase mb-2">
+                <GraduationCap className="w-4 h-4 text-indigo-700" />
+                <span>Subject Study Hub & Viva Voce Master Guide</span>
+              </div>
+              <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+                Mathematical Foundations, Algorithmic Proofs & Examiner Q&A
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-600 mt-1.5 max-w-3xl leading-relaxed">
+                Clear conceptual explanations, step-by-step calculus walkthroughs, AND-OR graph search mechanics, and model answers for project vivas and academic defense.
+              </p>
+            </div>
+            <div className="shrink-0 flex flex-col gap-2">
+              <span className="text-[11px] font-mono text-indigo-800 bg-white/90 border border-indigo-200 px-3 py-1.5 rounded-lg shadow-2xs font-bold text-center">
+                Persona: Subject (Studies)
+              </span>
+            </div>
+          </div>
+
+          {/* Module Selection Pills */}
+          <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-3">
+            {[
+              { id: 'bayes', label: '1. Bayes Theorem Calculus', icon: Calculator, desc: 'Prior Odds & Likelihood Ratio' },
+              { id: 'ao_star', label: '2. AO* Graph Decomposition', icon: Workflow, desc: 'AND-OR Proof Tree Search' },
+              { id: 'forensics', label: '3. CV & Image Splicing', icon: Eye, desc: 'Laplacian Variance & OCR Bounds' },
+              { id: 'domain', label: '4. Domain Classification', icon: ShieldCheck, desc: 'Receipt vs Non-Transaction' },
+              { id: 'viva_qa', label: '5. Examiner Viva Voce Q&A', icon: HelpCircle, desc: 'Top 10 Viva Questions & Answers' },
+            ].map((mod) => {
+              const Icon = mod.icon;
+              const isActive = activeStudyModule === mod.id;
+              return (
+                <button
+                  key={mod.id}
+                  onClick={() => setActiveStudyModule(mod.id as any)}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold transition-all border ${
+                    isActive
+                      ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                >
+                  <Icon className={`w-4 h-4 ${isActive ? 'text-indigo-300' : 'text-slate-500'}`} />
+                  <div className="text-left">
+                    <span className="block leading-tight">{mod.label}</span>
+                    <span className={`text-[10px] block font-normal ${isActive ? 'text-slate-300' : 'text-slate-400'}`}>
+                      {mod.desc}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Module 1: Bayes' Theorem in Action */}
+          {activeStudyModule === 'bayes' && (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              <div className="lg:col-span-8 flex flex-col gap-6">
+                {/* Core Concept Card */}
+                <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs">
+                  <div className="flex items-center gap-2 pb-4 border-b border-slate-200">
+                    <Calculator className="w-5 h-5 text-indigo-600" />
+                    <h3 className="text-lg font-bold text-slate-900">
+                      Why Bayes’ Theorem? (The Detective Clue Multiplier)
+                    </h3>
+                  </div>
+
+                  <div className="mt-4 text-xs sm:text-sm text-slate-700 space-y-4 leading-relaxed">
+                    <p>
+                      <strong>The Problem with Simple Rules:</strong> Traditional software uses simple Boolean rules (e.g., <em>“if amount &gt; 50,000, flag as fraud”</em>). This leads to catastrophic false alarms and misses clever forgers.
+                    </p>
+                    <p>
+                      <strong>The Bayesian Solution:</strong> Think of Bayes’ Theorem like a master detective solving a case. Before looking at any clue, the detective knows financial fraud is relatively rare (our <strong>Prior Probability</strong> P(Fraud) = 1.5%). As physical clues emerge, each clue does not condemn the suspect in isolation—instead, it multiplies the suspicion odds by its diagnostic strength (the <strong>Likelihood Ratio</strong>).
+                    </p>
+
+                    <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 font-mono text-xs">
+                      <div className="font-bold text-slate-900 mb-1">Standard Formula:</div>
+                      <div className="text-indigo-900">
+                        P(Fraud | Clues) = [ P(Clues | Fraud) · P(Fraud) ] / P(Clues)
+                      </div>
+                      <div className="mt-3 font-bold text-slate-900 mb-1">Odds-Form Equation (Computationally Efficient & Stable):</div>
+                      <div className="text-emerald-800">
+                        Posterior Odds = Prior Odds × ∏ [ Likelihood Ratio (E_i) ]
+                      </div>
+                      <div className="mt-2 text-slate-500 text-[11px]">
+                        Posterior Probability = Posterior Odds / (1 + Posterior Odds)
+                      </div>
+                    </div>
+
+                    <p>
+                      By multiplying odds, independent pieces of evidence (tampered font, invalid bank checksum, aberrant transaction hour) accumulate mathematically without arbitrary thresholds.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Concrete Numerical Walkthrough */}
+                <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs">
+                  <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2 mb-3">
+                    <Sparkles className="w-4 h-4 text-amber-600" />
+                    <span>Real Step-by-Step Numerical Example (As Implemented in Our Code)</span>
+                  </h4>
+
+                  <div className="space-y-3 text-xs sm:text-sm text-slate-700">
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                      <span className="font-bold text-slate-900 block mb-1">Step 0: Initial Baseline (Prior Probability)</span>
+                      <p className="text-xs text-slate-600">
+                        Prior Risk P₀ = 0.015 (1.5% base fraud rate in digital transactions).
+                        <br />
+                        Initial Odds: O₀ = 0.015 / (1 - 0.015) = <strong>0.0152</strong>.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-rose-50/50 border border-rose-200 rounded-lg">
+                      <span className="font-bold text-rose-900 block mb-1">Step 1: Computer Vision Flags Font Inconsistency (LR = 15.0)</span>
+                      <p className="text-xs text-slate-600">
+                        O₁ = O₀ × 15.0 = 0.0152 × 15.0 = <strong>0.2285</strong>.
+                        <br />
+                        Posterior: P₁ = 0.2285 / (1 + 0.2285) = <strong>18.6%</strong> risk.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-rose-50/50 border border-rose-200 rounded-lg">
+                      <span className="font-bold text-rose-900 block mb-1">Step 2: UTR Checksum Fails Verification (LR = 35.0)</span>
+                      <p className="text-xs text-slate-600">
+                        O₂ = O₁ × 35.0 = 0.2285 × 35.0 = <strong>7.9975</strong>.
+                        <br />
+                        Posterior: P₂ = 7.9975 / (1 + 7.9975) = <strong>88.9%</strong> risk (Catastrophic escalation!).
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-rose-50/50 border border-rose-200 rounded-lg">
+                      <span className="font-bold text-rose-900 block mb-1">Step 3: Background Noise Discontinuity Detected (LR = 8.0)</span>
+                      <p className="text-xs text-slate-600">
+                        O₃ = O₂ × 8.0 = 7.9975 × 8.0 = <strong>63.98</strong>.
+                        <br />
+                        Posterior: P₃ = 63.98 / (1 + 63.98) = <strong>98.46%</strong> risk &rarr; <strong>CRITICAL FRAUD VERDICT</strong>.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Side Reference: Calibrated Likelihood Table */}
+              <div className="lg:col-span-4 flex flex-col gap-6">
+                <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs">
+                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider font-mono mb-3">
+                    Calibrated Diagnostic Weights (LR)
+                  </h4>
+                  <p className="text-xs text-slate-500 mb-4 leading-relaxed">
+                    Likelihood Ratios &gt; 1.0 increase fraud probability; &lt; 1.0 clear suspicion and verify genuineness.
+                  </p>
+
+                  <div className="divide-y divide-slate-100 text-xs">
+                    <div className="py-2.5 flex items-center justify-between">
+                      <span className="text-slate-800 font-bold">UTR Checksum Failure</span>
+                      <span className="font-mono font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">LR = 35.0</span>
+                    </div>
+                    <div className="py-2.5 flex items-center justify-between">
+                      <span className="text-slate-800 font-bold">Font Baseline Tampering</span>
+                      <span className="font-mono font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">LR = 15.0</span>
+                    </div>
+                    <div className="py-2.5 flex items-center justify-between">
+                      <span className="text-slate-800 font-bold">Laplacian Noise Mismatch</span>
+                      <span className="font-mono font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">LR = 8.0</span>
+                    </div>
+                    <div className="py-2.5 flex items-center justify-between">
+                      <span className="text-slate-800 font-bold">Exorbitant Amount Spike</span>
+                      <span className="font-mono font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">LR = 6.0</span>
+                    </div>
+                    <div className="py-2.5 flex items-center justify-between">
+                      <span className="text-slate-800 font-bold">Genuine Security Seal & Timestamp</span>
+                      <span className="font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">LR = 0.05</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-indigo-50/60 border border-indigo-200 rounded-xl p-5 text-indigo-950 text-xs leading-relaxed">
+                  <div className="flex items-center gap-2 font-bold mb-2">
+                    <Lightbulb className="w-4 h-4 text-indigo-700" />
+                    <span>Viva Tip for Students</span>
+                  </div>
+                  When the examiner asks <em>“Why not use a Deep Neural Network?”</em>, answer:
+                  <strong> “Bayesian inference is 100% mathematically auditable and explainable in a court of law. A neural network cannot produce a legally binding step-by-step likelihood decomposition.”</strong>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Module 2: AO* Algorithm in Transaction Verification */}
+          {activeStudyModule === 'ao_star' && (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              <div className="lg:col-span-8 flex flex-col gap-6">
+                <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs">
+                  <div className="flex items-center gap-2 pb-4 border-b border-slate-200">
+                    <Workflow className="w-5 h-5 text-indigo-600" />
+                    <h3 className="text-lg font-bold text-slate-900">
+                      Why AO* Instead of Traditional A*? (The Courtroom Proof Tree)
+                    </h3>
+                  </div>
+
+                  <div className="mt-4 text-xs sm:text-sm text-slate-700 space-y-4 leading-relaxed">
+                    <p>
+                      <strong>The Core Distinction:</strong>
+                    </p>
+                    <ul className="list-disc pl-5 space-y-2 text-xs sm:text-sm">
+                      <li>
+                        <strong>Standard A* Algorithm:</strong> Traverses standard state graphs where every node has alternative single choices (pure OR-branches). It finds <em>one single path</em> from Start to Goal.
+                      </li>
+                      <li>
+                        <strong>AO* (And-Or) Algorithm:</strong> Solves hyper-graphs containing <strong>AND-branches</strong>. In fraud auditing, proving a transaction is authentic is not a single path—it requires proving <strong>all required conditions simultaneously</strong>!
+                      </li>
+                    </ul>
+
+                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                      <span className="font-bold text-slate-900 block mb-2 font-mono text-xs">
+                        Mathematical Cost Backpropagation Formulas:
+                      </span>
+                      <div className="space-y-3 font-mono text-xs">
+                        <div className="p-2.5 bg-white border border-slate-200 rounded">
+                          <span className="text-blue-900 font-bold block">For OR Node (Select Minimum Cost Alternative):</span>
+                          <code>f(n) = min [ c(n, m) + h(m) ] for all m in Children(n)</code>
+                        </div>
+                        <div className="p-2.5 bg-white border border-slate-200 rounded">
+                          <span className="text-indigo-900 font-bold block">For AND Node (All Sub-Goals Must Be Solved):</span>
+                          <code>f(n) = c(n, AND_set) + ∑ [ h(m) ] for all m in AND_set</code>
+                        </div>
+                      </div>
+                    </div>
+
+                    <p>
+                      If any child in an AND-branch fails or becomes infinite cost (e.g., UTR validation fails), the entire AND-branch fails, forcing the algorithm to backtrack to an alternate audit path.
+                    </p>
+                  </div>
+                </div>
+
+                {/* State Space Decomposition Diagram */}
+                <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs">
+                  <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2 mb-3">
+                    <Binary className="w-4 h-4 text-slate-700" />
+                    <span>Transaction Proof Decomposition in Our Engine</span>
+                  </h4>
+
+                  <div className="p-4 bg-slate-900 text-slate-100 rounded-lg font-mono text-xs overflow-x-auto leading-relaxed">
+                    <pre>{`Root: [Verify_Transaction] (OR Node)
+ │
+ ├── [Path A: Automated Fast-Path Verification] (AND Node - Cost: 10ms)
+ │    ├── [Sub-goal 1: Cryptographic UTR Format Valid]  (Cost: 2) -> SATISFIED
+ │    ├── [Sub-goal 2: CV Font Consistency Verified]    (Cost: 4) -> FAILED (Tampering)
+ │    └── [Sub-goal 3: Bank Routing Table Verified]      (Cost: 2) -> SATISFIED
+ │    ──> Entire AND-Branch FAILS due to Font Tampering!
+ │
+ └── [Path B: Forensic Escalation & Secondary Audit] (OR Node)
+      ├── [Branch B1: Deep Forensic Laplacian Discontinuity] -> CONFIRMED SPLICED
+      └── [Branch B2: Flag Suspicious Transaction & Block Payout] -> SOLVED (Goal Reached)`}</pre>
+                  </div>
+                </div>
+              </div>
+
+              {/* Side Explanations */}
+              <div className="lg:col-span-4 flex flex-col gap-6">
+                <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs">
+                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider font-mono mb-3">
+                    Key Terminology for Viva
+                  </h4>
+                  <div className="space-y-3 text-xs">
+                    <div className="p-2 bg-slate-50 rounded border border-slate-200">
+                      <strong className="text-slate-900 block">Hyper-Arc:</strong>
+                      <span className="text-slate-600">A connected group of edges that must all be satisfied together to solve an AND condition.</span>
+                    </div>
+                    <div className="p-2 bg-slate-50 rounded border border-slate-200">
+                      <strong className="text-slate-900 block">Heuristic Admissibility:</strong>
+                      <span className="text-slate-600">The heuristic estimate $h(n)$ must never overestimate the true remaining cost to guarantee optimal proof discovery.</span>
+                    </div>
+                    <div className="p-2 bg-slate-50 rounded border border-slate-200">
+                      <strong className="text-slate-900 block">FUTILITY Threshold:</strong>
+                      <span className="text-slate-600">If heuristic cost exceeds a cutoff threshold (e.g., $f(n) &gt; 100$), the branch is abandoned immediately.</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-emerald-50/60 border border-emerald-200 rounded-xl p-5 text-emerald-950 text-xs leading-relaxed">
+                  <div className="flex items-center gap-2 font-bold mb-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-700" />
+                    <span>Algorithmic Synergies</span>
+                  </div>
+                  Bayes calculates the <em>probability</em> of tampering ($P = 98.4\%$), and AO* searches the optimal <em>proof sequence</em> to explain and justify the verdict to bank compliance officers.
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Module 3: CV & Image Splicing */}
+          {activeStudyModule === 'forensics' && (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              <div className="lg:col-span-8 flex flex-col gap-6">
+                <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs">
+                  <div className="flex items-center gap-2 pb-4 border-b border-slate-200">
+                    <Eye className="w-5 h-5 text-indigo-600" />
+                    <h3 className="text-lg font-bold text-slate-900">
+                      Computer Vision Forensics: Splicing & Tamper Detection
+                    </h3>
+                  </div>
+
+                  <div className="mt-4 text-xs sm:text-sm text-slate-700 space-y-4 leading-relaxed">
+                    <p>
+                      Digital forgers use image editing software (Photoshop, Canva, PicsArt) to paste fake amounts onto real banking screenshots. Even if visually convincing to the naked human eye, the image leaves mathematical anomalies.
+                    </p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
+                      <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                        <span className="font-bold text-slate-900 block mb-1 text-xs">
+                          1. Laplacian Variance (∇² I)
+                        </span>
+                        <p className="text-xs text-slate-600 leading-relaxed">
+                          Computes the 2nd spatial derivative of the grayscale image. Digital tampering inserts localized sharp edges with zero sensor noise, causing massive variance spikes compared to background receipt textures.
+                        </p>
+                      </div>
+
+                      <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                        <span className="font-bold text-slate-900 block mb-1 text-xs">
+                          2. Error Level Analysis (ELA)
+                        </span>
+                        <p className="text-xs text-slate-600 leading-relaxed">
+                          Re-saves the image at 90% JPEG compression. Unmodified regions show consistent compression error, while spliced text blocks glow with high error intensity due to divergent compression generation cycles.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                      <span className="font-bold text-slate-900 block mb-1 text-xs">
+                        3. OCR Spatial Bounding Box Kerning & Alignment
+                      </span>
+                      <p className="text-xs text-slate-600 leading-relaxed">
+                        EasyOCR extracts character bounding boxes [x₁, y₁, x₂, y₂]. Authentic banking apps render numbers with uniform pixel baselines (&plusmn; 1px). Spliced fraudulent numbers deviate by &ge; 4px or exhibit mismatched font weights.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="lg:col-span-4 flex flex-col gap-6">
+                <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs">
+                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider font-mono mb-3">
+                    Mathematical Expression
+                  </h4>
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded font-mono text-xs text-indigo-900 leading-relaxed">
+                    σ²(∇² I) = (1/N) ∑ [ L(x, y) - μ ]²
+                  </div>
+                  <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+                    Where $L(x,y)$ is the convolution of image $I$ with the discrete Laplacian kernel:
+                  </p>
+                  <pre className="p-2 bg-slate-100 rounded text-[11px] font-mono text-slate-700 mt-2">
+{`[  0,  1,  0 ]
+[  1, -4,  1 ]
+[  0,  1,  0 ]`}
+                  </pre>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Module 4: Domain Classification */}
+          {activeStudyModule === 'domain' && (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              <div className="lg:col-span-8 flex flex-col gap-6">
+                <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs">
+                  <div className="flex items-center gap-2 pb-4 border-b border-slate-200">
+                    <ShieldCheck className="w-5 h-5 text-indigo-600" />
+                    <h3 className="text-lg font-bold text-slate-900">
+                      Domain & Intent Pre-Classification Architecture
+                    </h3>
+                  </div>
+
+                  <div className="mt-4 text-xs sm:text-sm text-slate-700 space-y-4 leading-relaxed">
+                    <p>
+                      <strong>The Problem of Domain Drift:</strong> What happens if an end-user uploads a company resume, a random scenic landscape photo, or a meme?
+                    </p>
+                    <p>
+                      In naive fraud detection systems, the AI would hallucinate fake transaction details, fabricate an amount, and run Bayes’ theorem on non-existent banking tokens!
+                    </p>
+                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                      <span className="font-bold text-slate-900 block mb-2 font-mono text-xs">
+                        Our Two-Stage Architectural Gate:
+                      </span>
+                      <ol className="list-decimal pl-5 space-y-2 text-xs sm:text-sm">
+                        <li>
+                          <strong>Stage 1: Intent & Document Pre-Classifier</strong>
+                          <br />
+                          Evaluates structural document syntax. Checks for the presence of payment markers (UPI / IMPS / NEFT / UTR / Reference ID / ₹ / INR / Beneficiary / Bank Logo).
+                          <br />
+                          If non-transaction is detected: <code>is_transaction_document = false</code>. The pipeline immediately short-circuits.
+                        </li>
+                        <li>
+                          <strong>Stage 2: Algorithmic Verification Engine</strong>
+                          <br />
+                          Invoked ONLY when Stage 1 passes. Bayesian calculus and AO* graph search are executed strictly on verified transaction screenshots.
+                        </li>
+                      </ol>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="lg:col-span-4 flex flex-col gap-6">
+                <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-5 text-amber-950 text-xs leading-relaxed">
+                  <div className="flex items-center gap-2 font-bold mb-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-700" />
+                    <span>Examiner Defense Point</span>
+                  </div>
+                  This architectural separation proves your engineering rigor. You protect computational resources and eliminate false positives before running heavy mathematical graph solvers.
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Module 5: Examiner Viva Voce Q&A */}
+          {activeStudyModule === 'viva_qa' && (
+            <div className="flex flex-col gap-6">
+              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs">
+                <div className="flex items-center justify-between pb-4 border-b border-slate-200 mb-6">
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                      <HelpCircle className="w-5 h-5 text-indigo-600" />
+                      <span>Top 10 Viva Voce Questions & Model Examiner Answers</span>
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Direct, concise answers formulated to impress external university evaluators, professors, and technical judges.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {[
+                    {
+                      q: 'Q1: Why did you choose Bayes’ Theorem over a deep learning neural network (like ResNet or CNN)?',
+                      a: 'Deep neural networks are black boxes: they output a probability score without an auditable chain of evidence. In financial law and banking compliance, automated decisions must be legally defensible. Bayes’ Theorem allows us to break down the exact Likelihood Ratio (LR) contributed by each clue (font anomaly, UTR checksum failure, noise variance), providing a 100% mathematically transparent audit trail.',
+                    },
+                    {
+                      q: 'Q2: What is the fundamental difference between A* and AO* algorithms?',
+                      a: 'Standard A* searches state graphs with OR choices only, seeking a single path from root to goal. AO* searches AND-OR hyper-graphs where achieving a goal requires solving multiple sub-goals simultaneously (AND-branches). In transaction auditing, authenticating a receipt requires verifying the UTR format AND checking font consistency AND validating the timestamp—making AO* the mathematically appropriate algorithm.',
+                    },
+                    {
+                      q: 'Q3: How do you prevent Bayesian posterior probability from degenerating to 0% or 100%?',
+                      a: 'We use the odds-form Bayesian formulation with bounded Likelihood Ratios and calibrated Laplace smoothing. Furthermore, the prior is clamped to a realistic window [10⁻⁴, 1 - 10⁻⁴] to ensure that no single noisy sensor can trigger a catastrophic false positive.',
+                    },
+                    {
+                      q: 'Q4: What is Laplacian Variance and how does it detect photo splicing?',
+                      a: 'The Laplacian operator (∇² I) computes the second spatial derivative of pixel intensities to measure edge sharpness. Authentic receipts captured via phone screens exhibit uniform blur and natural sensor grain. When a fraudster copies high-contrast digital text from Canva into a compressed screenshot, the localized Laplacian variance spikes significantly, exposing the spliced boundary.',
+                    },
+                    {
+                      q: 'Q5: What happens if a user uploads a resume, dog photo, or non-transaction document?',
+                      a: 'Our architecture employs a two-stage gate. Stage 1 executes a Domain and Intent Pre-Classifier that checks for UPI, UTR, and banking tokens. If the image is not a financial receipt, the system short-circuits gracefully, reporting is_transaction_document = false, without hallucinating fake fraud probabilities.',
+                    },
+                    {
+                      q: 'Q6: What is the time complexity of the AO* search in your implementation?',
+                      a: 'In the worst case, AO* has exponential time complexity O(b^d). However, because our transaction verification tree has a bounded depth of d ≤ 4 and branching factor b ≤ 3, the entire graph search resolves in under 2 milliseconds on a standard CPU.',
+                    },
+                    {
+                      q: 'Q7: How do you validate an Indian banking UTR (Unique Transaction Reference) number?',
+                      a: 'Indian UPI/IMPS UTR numbers follow strict structural standards: typically a 12-digit numeric sequence where the first digit represents the calendar year, the next three digits represent the Julian day of the year, and subsequent digits represent bank gateway routing. Invalid lengths or alphabet insertions immediately fail algorithmic validation.',
+                    },
+                    {
+                      q: 'Q8: What is the difference between False Positives and False Negatives in fraud detection, and how does your system balance them?',
+                      a: 'A False Positive blocks a legitimate customer payment (causing frustration and lost revenue). A False Negative approves a fraudulent transaction (causing financial theft). By using Likelihood Ratios calibrated from real banking data, we set a conservative prior (1.5%) so low-suspicion items pass friction-free, while high-stakes combinations trigger manual compliance escalation.',
+                    },
+                    {
+                      q: 'Q9: How does the AI Assistant (Gemini / Gemma) interact with the deterministic algorithms?',
+                      a: 'The generative AI does NOT calculate the math—it acts as an executive intelligence advisor. Bayes and AO* compute the exact deterministic metrics, and the LLM interprets these numbers into plain-language business recommendations tailored for Auditors, Consumers, or STEM Students.',
+                    },
+                    {
+                      q: 'Q10: Where can the full presentation deck and technical documentation be reviewed?',
+                      a: 'The complete technical whitepaper and 13-slide PowerPoint presentation deck with speaker notes are permanently documented in the project root repository in PROJECT_PRESENTATION_AND_ARCHITECTURE.md.',
+                    },
+                  ].map((item, idx) => (
+                    <div key={idx} className="p-4 bg-slate-50 border border-slate-200 rounded-lg hover:border-indigo-200 transition-colors">
+                      <h4 className="text-xs sm:text-sm font-bold text-slate-900 mb-2 flex items-start gap-2">
+                        <span className="text-indigo-600 shrink-0 font-mono">[{idx + 1}]</span>
+                        <span>{item.q}</span>
+                      </h4>
+                      <p className="text-xs text-slate-600 pl-6 leading-relaxed">
+                        {item.a}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Bottom Reference Note to Markdown Whitepaper */}
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <BookOpen className="w-5 h-5 text-indigo-600 shrink-0" />
+              <div>
+                <span className="text-xs font-bold text-slate-900 block">
+                  Complete Technical Whitepaper & PPT Deck Ready
+                </span>
+                <span className="text-[11px] text-slate-500">
+                  Read <code className="text-slate-800 font-bold">PROJECT_PRESENTATION_AND_ARCHITECTURE.md</code> in the repository root for the full 13-slide PowerPoint outline, speaker notes, and mathematical proofs.
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={() => setActiveSubTab('scanner')}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-colors shrink-0"
+            >
+              <span>Back to Forensic Scanner</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
           </div>
         </div>
       )}

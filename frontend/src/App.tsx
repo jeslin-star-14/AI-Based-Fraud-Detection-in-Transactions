@@ -598,7 +598,7 @@ export const App: React.FC = () => {
       />
 
       {activeAppTab === 'fraud' ? (
-        <FraudDetectionPanel />
+        <FraudDetectionPanel roleMode={roleMode} />
       ) : (
         /* Main 3-Panel Workspace */
         <main className="flex-1 flex flex-row overflow-hidden relative">
